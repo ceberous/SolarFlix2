@@ -150,6 +150,10 @@
 			else {
 
 				var firstTry = mp4URLS[0];
+
+				// convert to HTTPS	
+				var output = firstTry.substr(0, 4) + "s" + firstTry.substr(4 , firstTry.length);
+
 				vm.config.sources = [ {src: $sce.trustAsResourceUrl(firstTry), type: "video/mp4"} ];
 
 				vm.showVideo = true;
