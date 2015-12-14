@@ -1,0 +1,63 @@
+<html>
+<head>
+	<title>Solar Flix</title>
+	
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+	
+  <link rel="stylesheet" type="text/css" href="./css/bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" href="./css/jquery-ui.min.css">
+  <link rel="stylesheet" type="text/css" href="./css/style.css">
+  <link href="http://vjs.zencdn.net/5.0.2/video-js.css" rel="stylesheet">
+
+	<script type="text/javascript" src="./js/angular.js"></script>
+  <script type="text/javascript" src="./js/angular-resource.js"></script>
+	<script type="text/javascript" src="./js/angular-sanitize.js"></script>
+  <script type="text/javascript" src="./js/angular-ui-router.js"></script>
+  
+  <script type="text/javascript" src="./js/videoAngular.js"></script>
+  <script type="text/javascript" src="./js/vg-controls.js"></script>
+  <script type="text/javascript" src="./js/vg-buffering.js"></script>
+
+  <script type="text/javascript" src="./js/jquery.min.js"></script>
+  <script type="text/javascript" src="./js/jquery-ui.min.js"></script>
+	<script type="text/javascript" src="./js/bootstrap.min.js"></script>
+
+
+
+  <script type="text/javascript" src="./js/angularMain.js"></script>
+  <script type="text/javascript" src="./js/homeCtrl.js"></script>
+  <script type="text/javascript" src="./js/navigationDirective.js"></script>
+  <script type="text/javascript" src="./js/footerDirective.js"></script>
+
+  
+</head>
+
+<body ng-app="solarFlixApp">
+
+<div class="row">
+  
+  <div class="col-sm-3">
+    <navigation-generic></navigation-generic>
+  </div>
+
+  <div class="col-sm-9">
+    <div ui-view=""></div>
+  </div> 
+
+</div>
+
+<!-- <footer-generic></footer-generic> -->
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+

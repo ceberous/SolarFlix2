@@ -1,0 +1,88 @@
+<div class="row">
+
+	<div id="wrapperDiv2">
+		<!-- <h1 class="text-center">{{vm.main}}</h1> <br> -->
+	</div>
+	
+	<div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-2 col-xs-12" >
+		<div class="wrapperDiv" style="border-style: solid; border-color: green;">
+
+
+			<div ng-if="vm.displayVideo" class="row">
+				<div class="col-xs-12">
+					<a href="{{vm.MP4LINK}}">{{vm.MP4LINK}}</a>
+				</div>
+			</div>
+
+			<h1 class="text-center"><input id="tvURL" ng-model="vm.tvURL" type="text" ></h1>
+
+			<h1 class="text-center"><button ng-click="vm.searchTV()" class="btn btn-success">Search TV Show</button></h1>
+
+			<div ng-if="vm.showVideo" class="row">
+				<div class="col-xs-12">
+					<div class="videogular-container">
+						<videogular vg-theme="vm.config.theme.url">
+					        <vg-media vg-src="vm.config.sources"
+					                  vg-tracks="vm.config.tracks">
+					        </vg-media>
+
+					        <vg-controls>
+					            <vg-play-pause-button></vg-play-pause-button>
+					            <vg-time-display>{{ currentTime | date:'mm:ss':'+0000' }}</vg-time-display>
+					            <vg-scrub-bar>
+					                <vg-scrub-bar-current-time></vg-scrub-bar-current-time>
+					            </vg-scrub-bar>
+					            <vg-time-display>{{ timeLeft | date:'mm:ss':'+0000' }}</vg-time-display>
+					            <vg-time-display>{{ totalTime | date:'mm:ss':'+0000' }}</vg-time-display>
+					            <vg-volume>
+					                <vg-mute-button></vg-mute-button>
+					                <vg-volume-bar></vg-volume-bar>
+					            </vg-volume>
+					            <vg-fullscreen-button></vg-fullscreen-button>
+					        </vg-controls>
+
+					        <vg-buffering></vg-buffering>
+	    				</videogular>
+	    			</div>
+				</div>
+			</div>
+
+			<div ng-if="vm.showAUTOMATICLINKS" class="row">
+				<div class="col-xs-12">
+					<div>
+						<div ng-repeat="link in vm.AUTOMATICGRABEDLINKS track by $index">
+							<a hfref="{{link}}">{{link}}</a>
+						</div>
+					</div>
+				</div>
+			</div>				
+
+			<div class="row">
+				
+				<div class="col-xs-12">
+					<div>
+						<div ng-repeat="link in vm.hostProviders track by $index">
+							<a ng-click="vm.goToHostProvider(link)">{{link}}</a>
+						</div>
+					</div>
+				</div>
+			</div>			
+
+			<div class="row">
+				
+				<div class="col-xs-12">
+					<div>
+						<div ng-repeat="link in vm.returnedTVLinks track by $index">
+							<a ng-click="vm.goToTVEpisodeLink(link)">{{link}}</a>
+						</div>
+					</div>
+				</div>
+			</div>
+
+		</div>
+	</div>
+
+
+</div>
+
+		
