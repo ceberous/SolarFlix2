@@ -61,10 +61,13 @@
 		vm.showAUTOMATICLINKS = false;
 
 
+		var hostBlackList = ['ishared' , 'nosvideo' , 'grifthost' , 'vid.ag'];
+
+
 		vm.config = {
 			preload: "none",
 			sources: [
-				{src: $sce.trustAsResourceUrl("http://91.207.102.98:8777/ggcebikeek4pcnokalmcbz6c6c3apykzb2zkx4h2477ygwm7464qu2nv6y/v.mp4"), type: "video/mp4"},
+				{src: $sce.trustAsResourceUrl(""), type: "video/mp4"},
 			],
 			tracks: [
 				{
@@ -149,6 +152,8 @@
 				var firstTry = mp4URLS[0];
 				vm.config.sources = [ {src: $sce.trustAsResourceUrl(firstTry), type: "video/mp4"} ];
 
+				vm.showVideo = true;
+
 				vm.showAUTOMATICLINKS = true;
 				vm.AUTOMATICGRABEDLINKS = mp4URLS;
 			}
@@ -195,9 +200,27 @@
 				data: {url: link}
 			})
 				.success(function(data) {
-					console.log("should have .mp4 url");
+					console.log(".mp4 url from -->" + link);
 					console.log(data);
-					mp4URLS.push(data);
+
+					if (data != " " ) {
+
+						// grab host domain name
+						var domainName = link.split("/");
+						domainName = domainName[1];
+						console.log(domainName);
+
+						// remove links on blacklist
+						var blackListed = false;
+						for ( var i = 0; i < hostBlackList; ++i ) {
+							if ( hostBlackList[i] === domainName ) {
+								balckListed = true;
+							}
+						}
+						if (!blackListed) { mp4URLS.push(data); }
+						
+					}
+					
 					automaticHostProviders();
 				})
 				.error(function(error) {
