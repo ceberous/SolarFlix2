@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 var debug = require('debug')('Express4');
 var app = require('./app');
-var port = process.env.PORT || 3000;
+var port = process.env.PORT;
 
 app.set('port', port );
 
