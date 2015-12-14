@@ -79,7 +79,7 @@
 				}
 			],
 			theme: {
-      			url: ""
+      			url: "/css/videogular.css"
 			}
 		};
 
@@ -153,8 +153,9 @@
 
 				// convert to HTTPS	
 				var output = firstTry.substr(0, 4) + "s" + firstTry.substr(4 , firstTry.length);
+				console.log(output);
 
-				vm.config.sources = [ {src: $sce.trustAsResourceUrl(firstTry), type: "video/mp4"} ];
+				vm.config.sources = [ {src: $sce.trustAsResourceUrl(output), type: "video/mp4"} ];
 
 				vm.showVideo = true;
 
