@@ -63,12 +63,30 @@
 
 		var hostBlackList = ['ishared' , 'nosvideo' , 'grifthost' , 'vid.ag'];
 
+		vm.currentVideo = 0;
+		vm.API = null;
+		vm.state = null;
+
+		vm.onPlayerReady = function(API) {
+			vm.API = API;
+		};
+
+		vm.onCompleteVideo = function() {
+
+			vm.isCompleted = true;
+			vm.currentVideo += 1;
+
+			if ( vm.currentVideo >= vm.videos.length ) {
+				vm.currentVideo = 0;
+			}
+
+			vm.changeCurrentVideoSource( vm.currentVideo );
+
+		};
+
 
 		vm.config = {
 			preload: "none",
-			sources: [
-				{src: $sce.trustAsResourceUrl(""), type: "video/mp4"},
-			],
 			tracks: [
 				{
 					src: "pale-blue-dot.vtt",
@@ -81,6 +99,10 @@
 			theme: {
       			url: "./css/videogular.css"
 			}
+		};
+
+		vm.setShow = function() {
+			vm.tvURL = "the-office-2005";
 		};
 
 
@@ -103,22 +125,75 @@
 		};
 
 		var displayLinks = function( links ) {
-			// links === array of /tv/the-office-2005/season-9/episode-?? strings
+			// links === array of 
+				// [0] tv
+				// [1] the-office-2005
+				// [2] season-9
+				// [3] episode-?? 
 
 			links = removeDuplicates(links);
 			vm.returnedTVLinks = links;
+
+			var newShow = {}; 
+			var x = links[0].split("/");
+			newShow.showName = x[2];
+			x = x[3];
+			x = x.split("-");
+			x = parseInt( x[1] );
+			newShow.totalSeasons = x;
+			console.log("Total Seasons for " + newShow.showName + " = " + newShow.totalSeasons );
+
+			newShow.seasons = [newShow.totalSeasons];
+
+			// fill out array
+			for ( var i = 0; i < newShow.seasons.length; ++i ) {
+				newShow.seasons[i] = {season: i};
+			}
+			
+			for ( var i = 0; i < links.length; ++i ) {
+
+				var y = links[i].split("/");
+				var x = y;
+				x = x[3];
+				x = x.split("-");
+				x = parseInt( x[1] ); // season integer
+
+				//console.log(x);
+				newShow.seasons[x-1].season[x-1].push( { episode: y[4] , link: links[i] } )
+				
+		
+
+
+			}
+
+
 		};
 
 		vm.goToTVEpisodeLink = function( link ) {
+
 			link = link.split('/');
 			var show = link[2];
 			var season = link[3];
 			var episode = link[4];
+
+			vm.currentEpisode = episode;
+			vm.currentSeason = season;
+
+			var previousEpisode = episode.split("-");
+			var pE = parseInt( previousEpisode[1] ) - 1;
+			vm.previousEpisode = previousEpisode[0] + "-" + pE.toString();
+			console.log("Previous Episode = " + vm.previousEpisode);
+
+			var nE = parseInt( previousEpisode[1] ) + 1;
+			vm.nextEpisode = previousEpisode[0] + "-" + nE.toString();
+			console.log("Next Episode = " + vm.nextEpisode);
+
 			$http.put('/api/specificTVLink/' + show + '/' + season + '/' + episode )
 				.success(function(data){
 					displayHostProviders( data );
 				})
 			;
+
 		};
 
 
@@ -150,6 +225,22 @@
 			else {
 
 				var firstTry = mp4URLS[0];
+				vm.activeMovieURLS = mp4URLS;
+
+				vm.videos = [
+
+					{
+						sources: [
+							{src: $sce.trustAsResourceUrl(firstTry), type: "video/mp4"}
+						]
+
+					}
+
+				];
+
+				// start to grab next video in series
+				// ************************************************
+				// ************************************************
 
 				/*
 				// convert to HTTPS	
@@ -157,14 +248,42 @@
 				console.log(output);
 				*/
 
-				vm.config.sources = [ {src: $sce.trustAsResourceUrl(firstTry), type: "video/mp4"} ];
+				vm.config.sources = vm.videos[0].sources;
 
 				vm.showVideo = true;
 
 				vm.showAUTOMATICLINKS = true;
 				vm.AUTOMATICGRABEDLINKS = mp4URLS;
+
 			}
 
+		};
+
+		vm.setVideoURL = function( link ) {
+
+			// cache playlist
+			// ************************************************
+			// ************************************************
+
+			vm.showVideo = false;
+			setTimeout( function() { 
+
+				// re-Add playlist
+
+				vm.config.sources = [ {src: $sce.trustAsResourceUrl(link), type: "video/mp4"} ];
+
+			} , 1400 );
+			
+			vm.showVideo = true;
+
+		};
+
+		vm.changeCurrentVideoSource = function( link ) {
+			vm.API.stop();
+			vm.videos[0].sources = [ {src: $sce.trustAsResourceUrl(link), type: "video/mp4"} ]
+			setTimeout( function() {
+				vm.API.play.bind( vm.API );
+			} , 100 );
 		};
 
 

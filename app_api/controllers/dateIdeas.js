@@ -1,6 +1,8 @@
 var mongoose = require('mongoose');
 var request = require('request');
 var cheerio = require('cheerio');
+var http = require('http');
+var https = require('https');
 var fs = require('fs');
 
 // var DateIdea = mongoose.model('DateIdea');
@@ -38,6 +40,46 @@ var parseBody = function( res , body ) {
 	sendJSONResponse( res , 200 , links );
 };
 
+var recursiveOLDHTTPRequest = function( cachedURL ) {
+
+	var path2 = 'https://www.solarmovie.ph/tv/' + cachedURL;
+
+	var options = {
+		host: '206.225.95.171',
+		port: 8080,
+		path: path2,
+		method: 'GET',
+		headers: {
+			Host: path2
+		}
+	};
+
+	console.log("recursively trying from old HTTP request");
+
+	var req = https.request( options , function( res ) {
+
+	});
+
+	req.setTimeout( 50000 );
+
+	req.on( 'socket' , function( socket ) {
+		socket.setTimeout( 50000 );
+		socket.on( 'timeout' , function() {
+			req.abort();
+			recursiveOLDHTTPRequest( cachedURL );
+		});
+	});
+
+	req.on( 'data' , function( chunk ){
+		parseBody( res , chunk );
+	});
+
+	req.on( "error" , function(e) {
+		recursiveOLDHTTPRequest( cachedURL );
+	});
+
+};
+
 
 var recursiveCallGrabPage = function( cachedURL ) {
 
@@ -63,13 +105,41 @@ module.exports.grabPage = function( req , res ) {
 
 	var unFormattedURL = req.params.urlString;
 	var formattedURL = "http://www.solarmovie.ph/tv/" + unFormattedURL;
+	// formattedURL = url.parse( formattedURL );
 	var tmpBody;
 
-	request( formattedURL , function( error , response , body ) {
+	var proxy = "http://205.177.86.114:81";
+	var proxy2 = "http://198.169.246.30:80";
+
+	request( { 'url': formattedURL /*, 'proxy': proxy2 */  , 'timeout': 500000 }  , function( error , response , body ) {
+
 		if ( !error && response.statusCode === 200 ) {
 			if (body) {
 				parseBody( res , body);
 			}
+		}
+		else if ( error.code === 'ETIMEDOUT' ) {
+
+			// try non request module version
+			var path2 = '/tv/' + unFormattedURL + ".html";
+
+			var options = {
+				host: 'solarmovie.ph',
+				port: 80,
+				path: path2 
+			};
+
+			console.log("trying non-moduler http.get method");
+			http.get( options , function( resp ) {
+				resp.on( 'data' , function( chunk ){
+					parseBody( res , chunk );
+				});
+			}).on( "error" , function(e) {
+
+				cachedURL = formattedURL;
+				recursiveOLDHTTPRequest( cachedURL );
+			});
+
 		}
 		else {
 
@@ -78,6 +148,7 @@ module.exports.grabPage = function( req , res ) {
 			cachedURL = formattedURL;
 			recursiveCallGrabPage( cachedURL );
 		}
+
 	});
 
 
@@ -168,32 +239,49 @@ var grabIFRAME = function( res , body ) {
 		*/
 
 		
-		//console.log(iFrameLink);
+		//console.log("iframe link => " + iFrameLink);
 		//console.log("===============================================");
 		//console.log("===============================================");
 	}
 
+
 	sendJSONResponse( res , 200 , iFrameLink );
+
 
 };		
 
 
 module.exports.getMP4URL = function( req , res ) {
 
-	console.log("made it to getMP4URL()");
+	// console.log("made it to getMP4URL()");
 	var embededURL = req.body.url;
 
-	request( embededURL , function( error , response , body ) {
-		if ( !error && response.statusCode == 200 ) {
-			var urlString = getActualMP4URL( body );
-			sendJSONResponse( res , 200 , urlString );
-		}
-		else {
-			console.log("error");
-			sendJSONResponse( res , 400 , null );
-		}
-	});	
-	
+	var xTemp = embededURL.split("//");
+	xTemp = xTemp[1];
+	xTemp = xTemp.split("/");
+	var host = xTemp[0];
+	// console.log( "Source Provider =================> " + host );
+
+	// check blacklist
+	if ( host === "vodlocker.com" || host === "allmyvideos.net" ) {
+
+		request( embededURL , function( error , response , body ) {
+			if ( !error && response.statusCode == 200 ) {
+				var urlString = getActualMP4URL( body , host );
+				sendJSONResponse( res , 200 , urlString );
+			}
+			else {
+				console.log("error");
+				sendJSONResponse( res , 400 , null );
+			}
+		});	
+
+	}
+	else {
+		console.log("skipping unknown host : " + host );
+		sendJSONResponse( res , 400 , null );
+	}
+		
 };
 
 var goFishingForMP4URL = function( longString ) {
@@ -203,14 +291,80 @@ var goFishingForMP4URL = function( longString ) {
 
 };
 
-var getActualMP4URL = function( body ) {
+var getActualMP4URL = function( body , host ) {
 
+
+	if ( host === "vodlocker.com" ) {
+		var url = parseVodlocker( body );
+		return url;
+	}
+	else if ( host === "allmyvideos.net" ) {
+		var url = parseAllMyVideos( body );
+		return url;
+	}
+	else {
+		// console.log("host =>>>>>>>>>>>>>>>> " + host);
+		return "error : unAccepted host";
+	}
+
+
+};
+
+
+var parseAllMyVideos = function( body ) {
+	
+	var mp4URLS = [];
+
+	var sourceStart = body.search(/sources/i);
+	var startFirstLink = body.indexOf( "http" , sourceStart );
+	var endFirstLink = body.indexOf( ".mp4" , sourceStart);
+	endFirstLink = endFirstLink + 4;
+	var lowResLink = body.substring( startFirstLink , endFirstLink );
+	
+
+	var searchMedRes = body.indexOf( ".mp4" , endFirstLink + 1 );
+
+	if ( searchMedRes === -1 ) {
+		console.log("no higher res found");
+		return lowResLink;
+	}
+	else {
+
+		var startMedRes = body.indexOf( "http" , endFirstLink + 1 );
+		var endMedRes = body.indexOf( ".mp4" , startMedRes );
+		endMedRes = endMedRes + 4;
+		var medResLink = body.substring( startMedRes , endMedRes );
+		
+		var searchHighRes = body.indexOf( ".mp4" ,  endMedRes + 1 );
+		if ( searchHighRes === -1 ) {
+
+			console.log("no higher res found");
+			return medResLink;	
+		}
+		else {
+
+			var startHighRes = body.indexOf( "http" , endMedRes + 1 );
+			var endHighRes = searchHighRes + 4;
+			var highResLink = body.substring( startHighRes , endHighRes );
+			console.log("720p video found!!")
+			return highResLink;
+
+		}
+
+		
+	}
+
+
+	
+};
+
+
+var parseVodlocker = function( body ) {
 
 	var mp4Link = [];
 
 	var $ = cheerio.load(body);
 	$linkSearch = $('script');
-	//console.log($linkSearch);
 
 	for ( i = 0; i < $linkSearch.length; ++i ) {
 
@@ -234,7 +388,10 @@ var getActualMP4URL = function( body ) {
 			// Go Fishing for MP4 URL
 			// var finalURL = goFishingForMP4URL( jTemp );
 			
-			
+			// allmyvideos method
+			// video.mp4
+
+			// vodlocker method
 			var mp4 = jTemp.search(/v.mp4/i);
 			if (mp4 != -1) {
 
@@ -249,6 +406,7 @@ var getActualMP4URL = function( body ) {
 					var finalURL = jTemp.substring(start , mp4);
 					// console.log(finalURL);
 					finalURL = finalURL.toString();
+					console.log(finalURL);
 					return finalURL;
 
 				//}
@@ -259,10 +417,7 @@ var getActualMP4URL = function( body ) {
 		}
 	}
 
-	return " ";
-	
 };
-
 
 
 

@@ -7,21 +7,16 @@
 	<div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-2 col-xs-12" >
 		<div class="wrapperDiv" style="border-style: solid; border-color: green;">
 
-
-			<div ng-if="vm.displayVideo" class="row">
-				<div class="col-xs-12">
-					<a href="{{vm.MP4LINK}}">{{vm.MP4LINK}}</a>
-				</div>
-			</div>
-
 			<h1 class="text-center"><input id="tvURL" ng-model="vm.tvURL" type="text" ></h1>
+
+			<h3 class="text-center"><button ng-click="vm.setShow()" class="btn btn-success">the-office</button></h3>
 
 			<h1 class="text-center"><button ng-click="vm.searchTV()" class="btn btn-success">Search TV Show</button></h1>
 
 			<div ng-if="vm.showVideo" class="row">
 				<div class="col-xs-12">
 					<div class="videogular-container">
-						<videogular vg-theme="vm.config.theme.url">
+						<videogular  vg-player-ready="vm.onPlayerReady($API)" vg-complete="vm.onCompleteVideo()" vg-theme="vm.config.theme.url">
 					        <vg-media vg-src="vm.config.sources"
 					                  vg-tracks="vm.config.tracks">
 					        </vg-media>
@@ -45,18 +40,25 @@
 	    				</videogular>
 	    			</div>
 				</div>
-			</div>
+			</div>	
 
+
+
+			<!-- ACTIVE Video Valid MP4 URLS -->
 			<div ng-if="vm.showAUTOMATICLINKS" class="row">
 				<div class="col-xs-12">
 					<div>
 						<div ng-repeat="link in vm.AUTOMATICGRABEDLINKS track by $index">
-							<a hfref="{{link}}">{{link}}</a>
+							<!-- <a hfref="{{link}}">{{link}}</a> -->
+							<a ng-click="vm.changeCurrentVideoSource(link)"  class="btn btn-primary" >{{link}}</a>
 						</div>
 					</div>
 				</div>
-			</div>				
+			</div>		
 
+
+
+			<!-- Different Host Providers --> 
 			<div class="row">
 				
 				<div class="col-xs-12">
@@ -68,6 +70,8 @@
 				</div>
 			</div>			
 
+
+			<!-- Seasons and Episodes --> 
 			<div class="row">
 				
 				<div class="col-xs-12">
