@@ -45,7 +45,7 @@ var recursiveOLDHTTPRequest = function( cachedURL ) {
 	var path2 = 'https://www.solarmovie.ph/tv/' + cachedURL;
 
 	var options = {
-		host: '206.225.95.171',
+		host: 'http://proxy-us.hide.me/go.php?u=https%3A%2F%2F',
 		port: 8080,
 		path: path2,
 		method: 'GET',
@@ -104,14 +104,14 @@ var cachedURL;
 module.exports.grabPage = function( req , res ) {
 
 	var unFormattedURL = req.params.urlString;
-	var formattedURL = "http://www.solarmovie.ph/tv/" + unFormattedURL;
+	var formattedURL = "https://www.solarmovie.ph/tv/" + unFormattedURL;
 	// formattedURL = url.parse( formattedURL );
 	var tmpBody;
 
 	var proxy = "http://205.177.86.114:81";
-	var proxy2 = "http://198.169.246.30:80";
+	var proxy2 = "https://proxy-us.hide.me/go.php?u=https%3A%2F%2F";
 
-	request( { 'url': formattedURL /*, 'proxy': proxy2 */  , 'timeout': 500000 }  , function( error , response , body ) {
+	request( formattedURL , function( error , response , body ) {
 
 		if ( !error && response.statusCode === 200 ) {
 			if (body) {
@@ -176,16 +176,32 @@ module.exports.specificTVLink = function( req , res ) {
 
 var parseforHostProviders = function( res , body ) {
 
+	fs.writeFile( "specificTVLink.txt" , body , function( error ) {
+		if ( error ) { console.log( error ); }
+	});
+
 	var links = [];
+
 
 	var $ = cheerio.load(body);
 	var $linkSearch = $(".dataTable a");
 	$linkSearch.add($linkSearch.find('*'));
 	$linkSearch.each( function( i , e ) {
 		// console.log( $(e).attr("href") );
-		var tmp = $(e).attr("href");
-		tmp = tmp.toString();
-		links.push( tmp );
+
+
+		var hostName = $(e).html().trim();
+		//hostName = hostName.toString();
+		//hostName.replace( /\hostName+/g , ' ' );
+		console.log(hostName);
+
+		if ( hostName === "vodlocker.com" || hostName === "allmyvideos.net" ) {
+			var tmp = $(e).attr("href");
+			tmp = tmp.toString();
+			links.push( tmp );
+		}
+
+
 	});
 
 
