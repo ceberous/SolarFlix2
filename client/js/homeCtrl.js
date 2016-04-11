@@ -56,336 +56,417 @@
 		var pHostLength = 0;
 		var mp4URLS = [];
 
+		var totalSeasons;
+		var seasons = [];
+		var maxEpisodeForSeasons = [];
+
+		vm.alreadyActivated = false;
+
 		vm.tvURL;
 		vm.displayVideo = false;
 		vm.showAUTOMATICLINKS = false;
+		vm.showShowLinks = false;
 
+		vm.currentSeason;
+		vm.currentEpisode;		
 
-		var hostBlackList = ['ishared' , 'nosvideo' , 'grifthost' , 'vid.ag'];
+		// Attempt AJAX Search on theWatchTVSeries.to
+		// NEED TO MIGRATE TO SERVER-SIDE CALL
+		(function(){
 
-		vm.currentVideo = 0;
-		vm.API = null;
-		vm.state = null;
+			var searchInput;
 
-		vm.onPlayerReady = function(API) {
-			vm.API = API;
-		};
+			$( "#searchTVSHOW" ).bind( 'input' , function(){
 
-		vm.onCompleteVideo = function() {
+				searchInput = $(this).val().toString();
 
-			vm.isCompleted = true;
-			vm.currentVideo += 1;
+				if ( searchInput.length >= 3 ) {
 
-			if ( vm.currentVideo >= vm.videos.length ) {
-				vm.currentVideo = 0;
-			}
+					console.log("Searching : " + searchInput + " | " + searchInput.length );
 
-			vm.changeCurrentVideoSource( vm.currentVideo );
+					$http({
+						url: "http://thewatchseries.to/show/search-shows-json",
+						method: 'POST',
+						data: { value: searchInput }
 
-		};
+					}).success(function(result) {
+						console.log(result);
+					});
 
+		    	}
+		    });
 
-		vm.config = {
-			preload: "none",
-			tracks: [
-				{
-					src: "pale-blue-dot.vtt",
-					kind: "subtitles",
-					srclang: "en",
-					label: "English",
-					default: ""
+		}());
+
+		// 			GLOBAL HELPER FUNCTIONS
+		// ===============================================
+
+			vm.setShow = function() {
+				vm.tvURL = "the-office-2005";
+			};
+
+			var removeDuplicates = function( array ) {
+
+				return array.filter( function( item , pos , ary ) {
+					return !pos || item != ary[ pos - 1 ];
+				});
+
+			};
+
+			var decode_base64 = function(s) {
+
+			    var e = {}, i, k, v = [], r = '', w = String.fromCharCode;
+			    var n = [[65, 91], [97, 123], [48, 58], [43, 44], [47, 48]];
+
+			    for (z in n)
+			    {
+			        for (i = n[z][0]; i < n[z][1]; i++)
+			        {
+			            v.push(w(i));
+			        }
+			    }
+			    for (i = 0; i < 64; i++)
+			    {
+			        e[v[i]] = i;
+			    }
+
+			    for (i = 0; i < s.length; i+=72)
+			    {
+			        var b = 0, c, x, l = 0, o = s.substring(i, i+72);
+			        for (x = 0; x < o.length; x++)
+			        {
+			            c = e[o.charAt(x)];
+			            b = (b << 6) + c;
+			            l += 6;
+			            while (l >= 8)
+			            {
+			                r += w((b >>> (l -= 8)) % 256);
+			            }
+			         }
+			    }
+			    return r;
+
+			}; 
+
+			var decode_base64Array = function( array ) {
+
+				console.log("Decoding Base64 Array");
+
+				for ( var i = 0; i < array.length; ++i ) {
+					array[i] = decode_base64(array[i]);
+					console.log(array[i]);
 				}
-			],
-			theme: {
-      			url: "./css/videogular.css"
-			}
-		};
 
-		vm.setShow = function() {
-			vm.tvURL = "the-office-2005";
-		};
+				return array;
+
+			};
+
+		// ===============================================
 
 
-		var removeDuplicates = function( array ) {
+						// searchTV()
+		// ========================1=======================================
+		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			var displayLinks = function( links ) {
 
-			return array.filter( function( item , pos , ary ) {
-				return !pos || item != ary[ pos - 1 ];
-			});
-
-		};
-
-
-		vm.searchTV = function() {
-			console.log("made it to vm.searchTV()");
-			$http.put('/api/grabPage/' + vm.tvURL )
-				.success(function(data) {
-					displayLinks(data);
-				})
-			;
-		};
-
-		var displayLinks = function( links ) {
-			// links === array of 
-				// [0] tv
-				// [1] the-office-2005
-				// [2] season-9
-				// [3] episode-?? 
-
-			links = removeDuplicates(links);
-			vm.returnedTVLinks = links;
-
-			var newShow = {}; 
-			var x = links[0].split("/");
-			newShow.showName = x[2];
-			x = x[3];
-			x = x.split("-");
-			x = parseInt( x[1] );
-			newShow.totalSeasons = x;
-			console.log("Total Seasons for " + newShow.showName + " = " + newShow.totalSeasons );
-
-			newShow.seasons = [newShow.totalSeasons];
-
-			// fill out array
-			for ( var i = 0; i < newShow.seasons.length; ++i ) {
-				newShow.seasons[i] = {season: i};
-			}
-			
-			for ( var i = 0; i < links.length; ++i ) {
-
-				var y = links[i].split("/");
-				var x = y;
-				x = x[3];
-				x = x.split("-");
-				x = parseInt( x[1] ); // season integer
-
-				//console.log(x);
-				newShow.seasons[x-1].season[x-1].push( { episode: y[4] , link: links[i] } )
+				links = removeDuplicates(links);
 				
-		
+				//var seasons = [];
+
+				totalSeasons = parseInt(links[0].split("/")[3].split("-")[1]);
+				console.log("Total Seasons = " + totalSeasons);
+				vm.CURRENT_SHOW = links[0].split("/")[2];
+				console.log("Current Show SET--> " + vm.CURRENT_SHOW);
+				console.log("First: " + links[links.length-1]);
+				console.log("Last: " + links[0]);
+
+				var sCounter = 1;
+				var seasonobj = [];
+				seasons.push(seasonobj);
+
+				// sort into seasons 
+				for ( var i = links.length-1; i >= 0; --i ) {
+					
+					var season = parseInt(links[i].split("/")[3].split("-")[1])
+					//var episode = b[3].substring( 0 , b[3].length - 5 ).substring(1);
+					//console.log("Season -> " + season + " | Episode -> " + episode + " " + links[i]);
+
+					if( season === sCounter ) {
+						seasons[sCounter-1].push(links[i]);
+					} 
+					else {
+						sCounter += 1;
+						var seasonobj = [];
+						seasons.push(seasonobj);
+						seasons[sCounter-1].push(links[i]);
+					}
+
+				}
 
 
-			}
+				vm.showShowLinks = true;
+				vm.returnedSeasons = seasons;
 
+				// maxEpisodeForSeasons = [];
+				for ( var i = 0; i < seasons.length; ++i ) {
+					//console.log("Season - " + (i+1) + " <--> Last Episode = "  + seasons[i][ seasons[i].length - 1 ]);
+					maxEpisodeForSeasons.push( seasons[i][ seasons[i].length - 1 ].split("/")[4].split("-")[1] );
+				}
 
-		};
+			};			
 
-		vm.goToTVEpisodeLink = function( link ) {
-
-			link = link.split('/');
-			var show = link[2];
-			var season = link[3];
-			var episode = link[4];
-
-			vm.currentEpisode = episode;
-			vm.currentSeason = season;
-
-			var previousEpisode = episode.split("-");
-			var pE = parseInt( previousEpisode[1] ) - 1;
-			vm.previousEpisode = previousEpisode[0] + "-" + pE.toString();
-			console.log("Previous Episode = " + vm.previousEpisode);
-
-			var nE = parseInt( previousEpisode[1] ) + 1;
-			vm.nextEpisode = previousEpisode[0] + "-" + nE.toString();
-			console.log("Next Episode = " + vm.nextEpisode);
-
-			$http.put('/api/specificTVLink/' + show + '/' + season + '/' + episode )
-				.success(function(data){
-					displayHostProviders( data );
-				})
-			;
-
-		};
-
-
-		vm.goToHostProvider = function( link ) {
-			$http.put('/api/hostProvider/' + link )
-				.success(function(data) {
-					getMP4URL(data);
-				})
-			;
-		};
-
-		var automaticHostProviders = function() {
-
-			pHostLength = vm.hostProviders.length;
-
-			if ( pHostLength > 0 ) {
-				
-				var temp = vm.hostProviders.pop();
-				$http.put('/api/hostProvider/' + temp )
-					.success( function(data) {
-						automaticGetMP4URL( data );
+			vm.searchTV = function() {
+				console.log("made it to vm.searchTV()");
+				$http.put('/api/grabSolarMovieTVSHOW/' + vm.tvURL )
+					.success(function(data) {
+						displayLinks(data);
 					})
-					.error( function(errr) {
-						automaticHostProviders();
+				;
+			};
+		// ========================1=======================================
+
+
+						// goToTVEpisodeLink()
+		// ========================2=======================================
+		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			var globalProviderURLS = [];
+			var gI = 0;
+			var unNeededCopy = [];
+			var links = [];
+			var foundMP4URLS = [];
+
+			var currentEpisodeLinks = [];
+			var nextEpisodeLinks = [];
+			var previousEpisodeLinks = [];
+			var fillSwitch = 1;
+			var capcity = 0;
+
+			var cachedCurrentSeason,cachedCurrentEpisode;
+
+			var player;
+
+			var launchPlayerControlAI = function() {
+
+				vm.NOW_PLAYING = $sce.trustAsResourceUrl(foundMP4URLS[0]);
+				vm.displayVideo = true;
+
+				setTimeout( function() {
+
+					videojs("my-video").ready(function() {
+
+				  		console.log("we think #my-video is ready");
+
+				  		player = this;
+
+				  		cachedCurrentSeason = vm.currentSeason; 
+				  		cachedCurrentEpisode = vm.currentEpisode;
+
+				  		player.play();
+
+				  	});
+
+				} , 2500 );
+
+				// start gathering leftover links
+				setTimeout( function() {
+					getSecondLayer();
+				} , 2500 );
+					
+			};
+
+
+			var getSecondLayer = function() {
+
+				console.log(" --> .... getSecondLayer()");
+
+				if ( gI <= links.length - 1 ) {
+					console.log(links[gI]);
+
+					$http.put("/api/parseProvider/" + links[gI])
+						.success(function(data) {
+							
+							gI += 1;
+
+
+
+							if ( data.substring( data.length - 5 , data.length ) === "v.mp4" ) {
+
+								capcity += 1;
+
+								switch ( fillSwitch ) {
+
+									case 1:
+										foundMP4URLS.push(data);
+										break;
+									case 2:
+										nextEpisodeLinks.push(data);
+										break;
+									case 3:
+										previousEpisodeLinks.push(data);
+										break;
+									default:
+										break;
+
+								}
+
+								// foundMP4URLS.push(data);
+
+								if ( vm.displayVideo === false ) {
+									launchPlayerControlAI();
+								}
+								else {
+									if ( capcity < 4 ) {
+										getSecondLayer();
+									}
+									else {
+										gI = links.length + 1;
+										getSecondLayer();
+									}
+								}
+
+
+							} 
+							else {
+								getSecondLayer();
+							}
+
+
+						})
+						.error(function(error){
+							console.log(error);
+						})
+					;
+
+				} 
+				else {
+
+					links = [];
+
+					if ( fillSwitch === 1 ) {
+
+						console.log("Current Episode");
+						for ( var i = 0; i < foundMP4URLS.length; ++i ) {
+							console.log(foundMP4URLS[i]);
+						}						
+
+						fillSwitch = 2;
+
+						if ( cachedCurrentEpisode + 1 < maxEpisodeForSeasons[cachedCurrentSeason - 1] ) {
+							// console.log("Next Episode = " + (vm.currentEpisode + 1) )
+							// /tv/the-office-2005/season-1/episode-1/
+							var builtURL = "/tv/" + vm.CURRENT_SHOW + "/season-" + cachedCurrentSeason +"/episode-" + ( cachedCurrentEpisode + 1 )  + "/";
+							console.log("Next UP = " + builtURL);
+							vm.goToTVEpisodeLink(builtURL);
+						}
+						else {
+							var builtURL = "/tv/" + vm.CURRENT_SHOW + "/season-" + ( cachedCurrentSeason + 1 ) +"/episode-1/";
+							console.log("Next UP = " + builtURL);
+							vm.goToTVEpisodeLink(builtURL);
+						}
+
+					}
+					else if ( fillSwitch === 2 ) {
+
+						console.log("Next Episode");
+						for ( var i = 0; i < nextEpisodeLinks.length; ++i ) {
+							console.log(nextEpisodeLinks[i]);
+						}						
+
+						fillSwitch = 3;
+
+						if ( cachedCurrentEpisode - 1 < 1 ) {
+
+							var builtURL = "/tv/" + vm.CURRENT_SHOW + "/season-" + totalSeasons +"/episode-" + ( maxEpisodeForSeasons[totalSeasons -1] )  + "/";
+							console.log("Next UP = " + builtURL);
+							vm.goToTVEpisodeLink(builtURL);
+
+						}
+						else {
+							var builtURL = "/tv/" + vm.CURRENT_SHOW + "/season-" + cachedCurrentSeason +"/episode-" + ( cachedCurrentEpisode - 1 )  + "/";
+							console.log("Next UP = " + builtURL);
+							vm.goToTVEpisodeLink(builtURL);
+						}
+
+					}
+					else if ( fillSwitch === 3 ) {
+
+						console.log("Previous Episode");
+						for ( var i = 0; i < previousEpisodeLinks.length; ++i ) {
+							console.log(previousEpisodeLinks[i]);
+						}								
+
+						fillSwitch = 4;
+
+					}
+
+
+				}
+
+
+
+			};
+
+			vm.clickOnTVLink = function( link ) {
+
+				if ( vm.alreadyActivated === true ) {
+
+					capcity = 0;
+					vm.displayVideo = false;
+					vm.NOW_PLAYING = " ";
+
+					foundMP4URLS = [];
+					nextEpisodeLinks = [];
+					previousEpisodeLinks = [];
+
+					vm.alreadyActivated = false;
+					vm.goToTVEpisodeLink( link );
+				}
+
+			};
+
+			vm.goToTVEpisodeLink = function( link ) {
+
+				if ( vm.alreadyActivated === true ) {
+
+					capcity = 0;
+					gI = 0;
+					//foundMP4URLS = []
+					//nextEpisodeLinks = [];
+					//previousEpisodeLinks = [];
+
+					// vm.currentSeason = season;
+					// vm.currentEpisode = episode;
+					//maxEpisodeForSeasons = [];
+					vm.alreadyActivated = false;
+				}
+
+				var x,season,episode;
+				
+				
+				x = link.split("/"); 
+				season =  x[3];
+				episode = x[4];
+				vm.currentSeason = parseInt(season.split("-")[1]);
+				vm.currentEpisode = parseInt(episode.split("-")[1]);
+
+				console.log("		--> /api/specificEpisodeLink/" + vm.CURRENT_SHOW + "/" + season + "/" + episode);
+				$http.put('/api/specificEpisodeLink/' + vm.CURRENT_SHOW + "/" + season + "/" + episode )
+					.success(function(data) {
+						console.log("  		-->} Success");
+						links = data;
+						vm.alreadyActivated = true;
+						getSecondLayer();
+					})
+					.error(function(e){
+						console.log(e);
 					})
 				;
 
-			} 
-			else {
-
-				var firstTry = mp4URLS[0];
-				vm.activeMovieURLS = mp4URLS;
-
-				vm.videos = [
-
-					{
-						sources: [
-							{src: $sce.trustAsResourceUrl(firstTry), type: "video/mp4"}
-						]
-
-					}
-
-				];
-
-				// start to grab next video in series
-				// ************************************************
-				// ************************************************
-
-				/*
-				// convert to HTTPS	
-				var output = firstTry.substr(0, 4) + "s" + firstTry.substr(4 , firstTry.length);
-				console.log(output);
-				*/
-
-				vm.config.sources = vm.videos[0].sources;
-
-				vm.showVideo = true;
-
-				vm.showAUTOMATICLINKS = true;
-				vm.AUTOMATICGRABEDLINKS = mp4URLS;
-
-			}
-
-		};
-
-		vm.setVideoURL = function( link ) {
-
-			// cache playlist
-			// ************************************************
-			// ************************************************
-
-			vm.showVideo = false;
-			setTimeout( function() { 
-
-				// re-Add playlist
-
-				vm.config.sources = [ {src: $sce.trustAsResourceUrl(link), type: "video/mp4"} ];
-
-			} , 1400 );
-			
-			vm.showVideo = true;
-
-		};
-
-		vm.changeCurrentVideoSource = function( link ) {
-			vm.API.stop();
-			vm.videos[0].sources = [ {src: $sce.trustAsResourceUrl(link), type: "video/mp4"} ]
-			setTimeout( function() {
-				vm.API.play.bind( vm.API );
-			} , 100 );
-		};
-
-
-		var recursivelyFetchMP4URLS = function() {
-
-			if ( vm.hostProviders != null ) {
-
-				automaticHostProviders();
-
-			}
-
-		};
-
-		var displayHostProviders = function( links ) {
-
-			var showIDS = [];
-
-			for ( var i = 0; i < links.length; ++i ) {
-				var temp = links[i].split('/');
-				if ( temp[2] === "show" ) {
-					showIDS.push(temp[3]);
-				}
-			}
-
-			vm.hostProviders = showIDS;
-
-			recursivelyFetchMP4URLS();
-
-		};
-
-		var automaticGetMP4URL = function( link ) {
-
-			var param = {
-				url: link
 			};
+		// ========================2=======================================
 
-			$http( {
-				url: '/api/getMP4URL/',
-				method: 'PUT',
-				data: {url: link}
-			})
-				.success(function(data) {
-					console.log(".mp4 url from -->" + link);
-					console.log(data);
-
-					if (data != " " ) {
-
-						// grab host domain name
-						var domainName = link.split("/");
-						domainName = domainName[1];
-						console.log(domainName);
-
-						// remove links on blacklist
-						var blackListed = false;
-						for ( var i = 0; i < hostBlackList; ++i ) {
-							if ( hostBlackList[i] === domainName ) {
-								balckListed = true;
-							}
-						}
-						if (!blackListed) { mp4URLS.push(data); }
-						
-					}
-					
-					automaticHostProviders();
-				})
-				.error(function(error) {
-					automaticHostProviders();
-				})
-
-			;
-			
-		};
-
-		var getMP4URL = function( link ) {
-
-			var param = {
-				url: link
-			};
-
-			$http( {
-				url: '/api/getMP4URL/',
-				method: 'PUT',
-				data: {url: link}
-			})
-				.success(function(data) {
-					console.log( ".mp4 url from -->" + link);
-					console.log(data);
-					// displayVideo(data);
-					mp4URLS.push(data);
-				})
-
-			;
-
-		};
-
-		var displayVideo = function(link) {
-			vm.displayVideo = true;
-			vm.MP4LINK = link;
-		};
-
+		
 	}
-
 
 	angular
 		.module('solarFlixApp')

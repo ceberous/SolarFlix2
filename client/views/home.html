@@ -1,4 +1,4 @@
-<div class="row">
+ <div class="row">
 
 	<div id="wrapperDiv2">
 		<!-- <h1 class="text-center">{{vm.main}}</h1> <br> -->
@@ -9,76 +9,67 @@
 
 			<h1 class="text-center"><input id="tvURL" ng-model="vm.tvURL" type="text" ></h1>
 
-			<h3 class="text-center"><button ng-click="vm.setShow()" class="btn btn-success">the-office</button></h3>
+			<h3 class="text-center"><button ng-click="vm.setShow()" class="btn btn-success">the-office-2005</button></h3>
 
 			<h1 class="text-center"><button ng-click="vm.searchTV()" class="btn btn-success">Search TV Show</button></h1>
 
-			<div ng-if="vm.showVideo" class="row">
+
+			<!--
+			<div class="ui-widget">
+  				<label for="city">Your city: </label>
+  				<input id="searchTVSHOW">
+			</div>
+ 
+			<div class="ui-widget" style="margin-top:2em; font-family:Arial">
+			  Result:
+			  <div id="log" style="height: 200px; width: 300px; overflow: auto;" class="ui-widget-content"></div>
+			</div>
+			-->
+
+			<div ng-if="vm.displayVideo" class="row">
 				<div class="col-xs-12">
-					<div class="videogular-container">
-						<videogular  vg-player-ready="vm.onPlayerReady($API)" vg-complete="vm.onCompleteVideo()" vg-theme="vm.config.theme.url">
-					        <vg-media vg-src="vm.config.sources"
-					                  vg-tracks="vm.config.tracks">
-					        </vg-media>
+					
+					<div class="panel panel-danger">
+						<div class="panel-heading">Video</div>
+						<div class="panel-body">
 
-					        <vg-controls>
-					            <vg-play-pause-button></vg-play-pause-button>
-					            <vg-time-display>{{ currentTime | date:'mm:ss':'+0000' }}</vg-time-display>
-					            <vg-scrub-bar>
-					                <vg-scrub-bar-current-time></vg-scrub-bar-current-time>
-					            </vg-scrub-bar>
-					            <vg-time-display>{{ timeLeft | date:'mm:ss':'+0000' }}</vg-time-display>
-					            <vg-time-display>{{ totalTime | date:'mm:ss':'+0000' }}</vg-time-display>
-					            <vg-volume>
-					                <vg-mute-button></vg-mute-button>
-					                <vg-volume-bar></vg-volume-bar>
-					            </vg-volume>
-					            <vg-fullscreen-button></vg-fullscreen-button>
-					        </vg-controls>
+						  <video id="my-video" class="video-js" controls preload="auto" width="640" height="264"
+						   data-setup="{}">
+						    <source src="{{vm.NOW_PLAYING}}" type='video/mp4'>
+						    <p class="vjs-no-js">
+						      To view this video please enable JavaScript, and consider upgrading to a web browser that
+						      <a href="http://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+						    </p>
+						  </video>
 
-					        <vg-buffering></vg-buffering>
-	    				</videogular>
-	    			</div>
-				</div>
-			</div>	
+						  <ol class="vjs-playlist"></ol>
 
-
-
-			<!-- ACTIVE Video Valid MP4 URLS -->
-			<div ng-if="vm.showAUTOMATICLINKS" class="row">
-				<div class="col-xs-12">
-					<div>
-						<div ng-repeat="link in vm.AUTOMATICGRABEDLINKS track by $index">
-							<!-- <a hfref="{{link}}">{{link}}</a> -->
-							<a ng-click="vm.changeCurrentVideoSource(link)"  class="btn btn-primary" >{{link}}</a>
-						</div>
+						</div>	
 					</div>
-				</div>
-			</div>		
 
-
-
-			<!-- Different Host Providers --> 
-			<div class="row">
-				
-				<div class="col-xs-12">
-					<div>
-						<div ng-repeat="link in vm.hostProviders track by $index">
-							<a ng-click="vm.goToHostProvider(link)">{{link}}</a>
-						</div>
-					</div>
-				</div>
-			</div>			
-
+				</div>	
+			</div>
 
 			<!-- Seasons and Episodes --> 
-			<div class="row">
-				
+			<div ng-if="vm.showShowLinks" class="row">
 				<div class="col-xs-12">
-					<div>
-						<div ng-repeat="link in vm.returnedTVLinks track by $index">
-							<a ng-click="vm.goToTVEpisodeLink(link)">{{link}}</a>
-						</div>
+					<div class="panel panel-primary">
+						<div class="panel-heading">Seasons</div>
+						<div class="panel-body">
+							<div class="btn-group" ng-repeat="season in vm.returnedSeasons track by $index">
+									<button type="button" class="btn btn-warning">{{$index+1}}</button>
+									<button type="button" class="btn btn-warning dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+										<span class="caret"></span>
+										<span class="sr-only">Toggle Dropdown</span>
+									</button>
+
+									<ul class="dropdown-menu">
+										<li ng-repeat="link in season">
+											<a ng-click="vm.goToTVEpisodeLink(link)">{{link}}</a>
+										</li>
+									</ul>
+								</div>
+							</div>
 					</div>
 				</div>
 			</div>
@@ -89,4 +80,4 @@
 
 </div>
 
-		
+			

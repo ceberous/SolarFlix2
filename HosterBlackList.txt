@@ -1,6 +1,0 @@
-Watch List ( exclude these sites )
-
-ishared.eu
-nosvideo.com
-grifthost.com ( .flv )
-vid.ag ( needs deobfuscated )

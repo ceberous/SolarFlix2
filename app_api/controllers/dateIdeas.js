@@ -9,432 +9,358 @@ var fs = require('fs');
 
 
 
-// HELPER FUNCTIONS 
+// 			GLOBAL HELPER FUNCTIONS 
 // ======================================
 	var sendJSONResponse = function( res , status , content ) {
 	    if (status) {res.status(status);}
 	    res.json(content);
 	};
-// ========== END HELPER ==================
 
+	var decode_base64 = function(s) {
 
+	    var e = {}, i, k, v = [], r = '', w = String.fromCharCode;
+	    var n = [[65, 91], [97, 123], [48, 58], [43, 44], [47, 48]];
 
+	    for (z in n)
+	    {
+	        for (i = n[z][0]; i < n[z][1]; i++)
+	        {
+	            v.push(w(i));
+	        }
+	    }
+	    for (i = 0; i < 64; i++)
+	    {
+	        e[v[i]] = i;
+	    }
 
+	    for (i = 0; i < s.length; i+=72)
+	    {
+	        var b = 0, c, x, l = 0, o = s.substring(i, i+72);
+	        for (x = 0; x < o.length; x++)
+	        {
+	            c = e[o.charAt(x)];
+	            b = (b << 6) + c;
+	            l += 6;
+	            while (l >= 8)
+	            {
+	                r += w((b >>> (l -= 8)) % 256);
+	            }
+	         }
+	    }
+	    return r;
 
-var parseBody = function( res , body ) {
-	// console.log(body);
-
-	var links = [];
-
-	var $ = cheerio.load(body);
-	var $linkSearch = $("div.js-episode a");
-	$linkSearch.add($linkSearch.find('*'));
-	$linkSearch.each( function( i , e ) {
-		// console.log( $(e).attr("href") );
-		var tmp = $(e).attr("href");
-		tmp = tmp.toString();
-		links.push( tmp );
-	});
-
-
-	sendJSONResponse( res , 200 , links );
-};
-
-var recursiveOLDHTTPRequest = function( cachedURL ) {
-
-	var path2 = 'https://www.solarmovie.ph/tv/' + cachedURL;
-
-	var options = {
-		host: 'http://proxy-us.hide.me/go.php?u=https%3A%2F%2F',
-		port: 8080,
-		path: path2,
-		method: 'GET',
-		headers: {
-			Host: path2
-		}
 	};
 
-	console.log("recursively trying from old HTTP request");
-
-	var req = https.request( options , function( res ) {
-
-	});
-
-	req.setTimeout( 50000 );
-
-	req.on( 'socket' , function( socket ) {
-		socket.setTimeout( 50000 );
-		socket.on( 'timeout' , function() {
-			req.abort();
-			recursiveOLDHTTPRequest( cachedURL );
-		});
-	});
-
-	req.on( 'data' , function( chunk ){
-		parseBody( res , chunk );
-	});
-
-	req.on( "error" , function(e) {
-		recursiveOLDHTTPRequest( cachedURL );
-	});
-
-};
+// ========== END GLOBAL HELPER ==================
 
 
-var recursiveCallGrabPage = function( cachedURL ) {
+			// grabSolarMovieTVSHOW()
+// ========================1=======================================
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	// [##############Helper Functions######################]
+	// [													]
 
-	console.log("Requesting : \n");
-	console.log(cachedURL + "\n");
+		var parseBody = function( res , body ) {
+		
+			var $ = cheerio.load(body);
 
-	request( cachedURL , function( error , response , body ) {
-		if ( !error && response.statusCode === 200 ) {
-			if (body) {
-				parseBody( res , body);
-			}
-		}
-		else {
-			if ( error  ) { console.log( error ); }
-			recursiveCallGrabPage( cachedURL );
-		}
-	});	
-
-};
-
-var cachedURL;
-module.exports.grabPage = function( req , res ) {
-
-	var unFormattedURL = req.params.urlString;
-	var formattedURL = "https://www.solarmovie.ph/tv/" + unFormattedURL;
-	// formattedURL = url.parse( formattedURL );
-	var tmpBody;
-
-	var proxy = "http://205.177.86.114:81";
-	var proxy2 = "https://proxy-us.hide.me/go.php?u=https%3A%2F%2F";
-
-	request( formattedURL , function( error , response , body ) {
-
-		if ( !error && response.statusCode === 200 ) {
-			if (body) {
-				parseBody( res , body);
-			}
-		}
-		else if ( error.code === 'ETIMEDOUT' ) {
-
-			// try non request module version
-			var path2 = '/tv/' + unFormattedURL + ".html";
-
-			var options = {
-				host: 'solarmovie.ph',
-				port: 80,
-				path: path2 
-			};
-
-			console.log("trying non-moduler http.get method");
-			http.get( options , function( resp ) {
-				resp.on( 'data' , function( chunk ){
-					parseBody( res , chunk );
-				});
-			}).on( "error" , function(e) {
-
-				cachedURL = formattedURL;
-				recursiveOLDHTTPRequest( cachedURL );
+			var links = [];
+			var $linkSearch = $(".seasonEpisodeListBox a");
+			$linkSearch.add($linkSearch.find('*'));
+			$linkSearch.each( function( i , e ) {
+				var tmp = $(e).attr("href");
+				var hasEpisodeAttachment = tmp.split("/")[4];
+				hasEpisodeAttachment = ( hasEpisodeAttachment === undefined ) ? 0 : hasEpisodeAttachment.toString().trim();
+				hasEpisodeAttachment = ( hasEpisodeAttachment.length > 0 ) ? 1 : 0;
+				//console.log(hasEpisodeAttachment);
+				if ( tmp.substring(0,4) === "/tv/" ) {
+					if ( hasEpisodeAttachment === 1 ) {
+						//console.log( $(e).attr("href") );
+						tmp = tmp.toString();
+						links.push( tmp );
+					}
+				}
 			});
 
-		}
-		else {
+			sendJSONResponse( res , 200 , links );
+		};
 
-			if ( error ) { console.log( error ); }
-			
-			cachedURL = formattedURL;
-			recursiveCallGrabPage( cachedURL );
-		}
+	// [##############Helper Functions######################]
 
-	});
+	module.exports.grabSolarMovieTVSHOW = function( req , res ) {
 
+		var showName = req.params.urlString;
+		var searchURL = "http://solarmovie.ph/tv/" + showName;
 
-};
+		request( searchURL , function( error , response , body ) {
 
+			if ( !error && response.statusCode === 200 ) {
+				if (body) {
+					parseBody( res , body );
+				}
+			}
+			else {
 
-module.exports.specificTVLink = function( req , res ) {
-
-	var baseURL = "http://www.solarmovie.ph/tv/";
-	var show = req.params.show;
-	var season = req.params.season;
-	var episode = req.params.episode;
-	var finalURL = baseURL + show + '/' + season + '/' + episode;
-
-	request( finalURL , function( error , response , body ) {
-		if ( !error && response.statusCode == 200 ) {
-			parseforHostProviders( res , body );
-		}
-		else {
-			console.log("error");
-		}
-	});
-
-};
-
-var parseforHostProviders = function( res , body ) {
-
-	fs.writeFile( "specificTVLink.txt" , body , function( error ) {
-		if ( error ) { console.log( error ); }
-	});
-
-	var links = [];
-
-
-	var $ = cheerio.load(body);
-	var $linkSearch = $(".dataTable a");
-	$linkSearch.add($linkSearch.find('*'));
-	$linkSearch.each( function( i , e ) {
-		// console.log( $(e).attr("href") );
-
-
-		var hostName = $(e).html().trim();
-		//hostName = hostName.toString();
-		//hostName.replace( /\hostName+/g , ' ' );
-		console.log(hostName);
-
-		if ( hostName === "vodlocker.com" || hostName === "allmyvideos.net" ) {
-			var tmp = $(e).attr("href");
-			tmp = tmp.toString();
-			links.push( tmp );
-		}
-
-
-	});
-
-
-	sendJSONResponse( res , 200 , links );
-
-};
-
-module.exports.hostProvider = function( req , res ) {
-
-	var playURL = "http://cinema.solarmovie.ph/link/play/" + req.params.showID;
-	console.log( "now searching : " + playURL );
-
-	request( playURL , function( error , response , body ) {
-		if ( !error && response.statusCode == 200 ) {
-			grabIFRAME( res , body );
-		}
-		else {
-			console.log("error");
-		}
-	});
-
-
-};
-
-var localCount = 1;
-
-var grabIFRAME = function( res , body ) {
-
-
-	var iFrameLink;
-
-	var $ = cheerio.load(body);
-	
-	var $linkSearch = $("iframe[src*='http://']");
-
-	// look through Iframe's for known provider links
-	for ( var i = 0; i < $linkSearch.length; i++ ) {
+				if ( error ) { console.log( error ); }
 		
-	
-		// console.log($linkSearch[i].attribs["src"]);
-		
-		iFrameLink = $linkSearch[i].attribs["src"];
+				// cachedURL = formattedURL;
+				// recursiveCallGrabPage( cachedURL );
+			}
 
-		/*
-		if ( $linkSearch[i].children[1].children[0] ) {
-			iFrameLink = $linkSearch[i].children[1].children[0].attribs["src"];
-		}
-		else {
-			console.log(body);
-		}
-		*/
+		});
 
-		
-		//console.log("iframe link => " + iFrameLink);
-		//console.log("===============================================");
-		//console.log("===============================================");
-	}
+	};
+// ========================1=======================================
 
 
-	sendJSONResponse( res , 200 , iFrameLink );
+			// specificEpisodeLink()
 
+// ========================2=======================================
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	// [##############Helper Functions######################]
+	// [													]
 
-};		
+		var isOnProviderWhiteList = function(link) {
 
+			if ( link === undefined ) {
+				return false;
+			}
+			else if (
 
-module.exports.getMP4URL = function( req , res ) {
+				link === "gorillavid" ||
+				link === "vodlocker" ||
+				link === "allmyvideos" ||
+				link === "thevideo" 
 
-	// console.log("made it to getMP4URL()");
-	var embededURL = req.body.url;
+			) {
+				return true;
+			}
+			else {
+				return false;
+			}
 
-	var xTemp = embededURL.split("//");
-	xTemp = xTemp[1];
-	xTemp = xTemp.split("/");
-	var host = xTemp[0];
-	// console.log( "Source Provider =================> " + host );
+		};
 
-	// check blacklist
-	if ( host === "vodlocker.com" || host === "allmyvideos.net" ) {
+		var parseforHostProviders = function( res , body ) {
 
-		request( embededURL , function( error , response , body ) {
+			console.log("Parsing for Provider Links");
+
+			var links = [];
+			var x,j,thisP,providerName;
+
+			var $ = cheerio.load(body);
+			var $linkSearch = $(".table-responsive a");
+			$linkSearch.add($linkSearch.find('*'));
+			$linkSearch.each( function( i , e ) {
+
+				providerName = $(e).html().trim();
+				providerName = providerName.split(".")[0];
+
+				if ( providerName.length > 0 && isOnProviderWhiteList(providerName) ) {
+					thisP = $(e).attr("href").split("/")[3];
+					console.log(providerName + " <---> " + thisP);
+					links.push( providerName + "-" + thisP );
+
+				}
+
+			});
+
+			console.log("Provider Links Returned");
+			sendJSONResponse( res , 200 , links );
+
+		};
+
+	// [##############Helper Functions######################]
+
+	module.exports.specificEpisodeLink = function( req , res ) {
+
+		var baseURL = "http://solarmovie.ph/tv/";
+		var finalURL = baseURL + req.params.show + "/" + req.params.season + "/" + req.params.episode; 
+
+		console.log("Grabbing Provider Links for --> " + finalURL);
+
+		request( finalURL , function( error , response , body ) {
 			if ( !error && response.statusCode == 200 ) {
-				var urlString = getActualMP4URL( body , host );
-				sendJSONResponse( res , 200 , urlString );
+				parseforHostProviders( res , body );
 			}
 			else {
 				console.log("error");
 				sendJSONResponse( res , 400 , null );
 			}
-		});	
+		});
 
-	}
-	else {
-		console.log("skipping unknown host : " + host );
-		sendJSONResponse( res , 400 , null );
-	}
-		
-};
-
-var goFishingForMP4URL = function( longString ) {
+	};
+// ========================2=======================================
 
 
+			// grabGorrilaVidSecondLayer()
+// ========================3=======================================
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	// [##############Helper Functions######################]
+	// [													]
 
+		var NULL_COUNT = 0;
+		var start,end,mp4URL;
 
-};
+		var parseVodlockerThird = function( res , body ) {
+			end = body.search("v.mp4");
+			start = body.indexOf( "file: \"http://" , end - 100 );
+			mp4URL = body.substring( start + 7 , end + 5 );
+			sendJSONResponse( res , 200 , mp4URL );
+		};
 
-var getActualMP4URL = function( body , host ) {
+		var parseVodlockerSecond = function( res , iFrameURL ) {
 
+			console.log("Parsing Vodlocker Second Phase --> " + iFrameURL);
+			request.get( iFrameURL , function( error , response , body ) {
+				if ( !error && response.statusCode == 200 ) {
+					//console.log(body);
+					parseVodlockerThird( res ,  body )
+				}
+				else {
+					console.log("error : " + error );
+					if (NULL_COUNT < 3) {
+						NULL_COUNT += 1;
+						parseVodlockerSecond(res , iFrameURL);	
+					}
+					else {
+						NULL_COUNT = 0;
+						sendJSONResponse( res , 404 , null );
+					}
+					
+				}
+			});
 
-	if ( host === "vodlocker.com" ) {
-		var url = parseVodlocker( body );
-		return url;
-	}
-	else if ( host === "allmyvideos.net" ) {
-		var url = parseAllMyVideos( body );
-		return url;
-	}
-	else {
-		// console.log("host =>>>>>>>>>>>>>>>> " + host);
-		return "error : unAccepted host";
-	}
+		};
 
+		var parseVodlocker = function( res , body ) {
 
-};
+			console.log("Parsing Vodlocker");
 
+			var $ = cheerio.load(body);
+			var iFrameURL;
 
-var parseAllMyVideos = function( body ) {
-	
-	var mp4URLS = [];
+			var $linkSearch = $(".thirdPartyEmbContainer iframe");
+			$linkSearch.add($linkSearch.find('*'));
+			$linkSearch.each( function( i , e ) {
+				console.log( $(e).attr("src") );
+				iFrameURL = $(e).attr("src");
+				
+			});
 
-	var sourceStart = body.search(/sources/i);
-	var startFirstLink = body.indexOf( "http" , sourceStart );
-	var endFirstLink = body.indexOf( ".mp4" , sourceStart);
-	endFirstLink = endFirstLink + 4;
-	var lowResLink = body.substring( startFirstLink , endFirstLink );
-	
+			// console.log(providerURL);
+			parseVodlockerSecond( res , iFrameURL);
+			// sendJSONResponse( res , 200 , iFrameURL );
 
-	var searchMedRes = body.indexOf( ".mp4" , endFirstLink + 1 );
+		};
 
-	if ( searchMedRes === -1 ) {
-		console.log("no higher res found");
-		return lowResLink;
-	}
-	else {
+		var parseSecondLayer = function( res , providerName , body )  {
+			console.log(" -> .... parseSecondLayer()");
 
-		var startMedRes = body.indexOf( "http" , endFirstLink + 1 );
-		var endMedRes = body.indexOf( ".mp4" , startMedRes );
-		endMedRes = endMedRes + 4;
-		var medResLink = body.substring( startMedRes , endMedRes );
-		
-		var searchHighRes = body.indexOf( ".mp4" ,  endMedRes + 1 );
-		if ( searchHighRes === -1 ) {
+			switch ( providerName ) {
 
-			console.log("no higher res found");
-			return medResLink;	
-		}
-		else {
-
-			var startHighRes = body.indexOf( "http" , endMedRes + 1 );
-			var endHighRes = searchHighRes + 4;
-			var highResLink = body.substring( startHighRes , endHighRes );
-			console.log("720p video found!!")
-			return highResLink;
-
-		}
-
-		
-	}
-
-
-	
-};
-
-
-var parseVodlocker = function( body ) {
-
-	var mp4Link = [];
-
-	var $ = cheerio.load(body);
-	$linkSearch = $('script');
-
-	for ( i = 0; i < $linkSearch.length; ++i ) {
-
-		if ($linkSearch[i].children[0] != null && $linkSearch[i].children[0] != undefined ) {
-			//console.log($linkSearch[i].children[0]);
-			mp4Link.push($linkSearch[i].children[0]);
-		}
-	}
-
-	for (var i = 0; i < mp4Link.length; ++i){
-
-		var temp = mp4Link[i].data.toString()
-		temp = temp.split("\n");
-
-		for (var j = 0; j < temp.length; ++j) {
-
-			var jTemp = temp[j].toString();
-			jTemp.split(' ').join('');
-			jTemp.replace(/^\s+|\s+$/g,'');
-
-			// Go Fishing for MP4 URL
-			// var finalURL = goFishingForMP4URL( jTemp );
-			
-			// allmyvideos method
-			// video.mp4
-
-			// vodlocker method
-			var mp4 = jTemp.search(/v.mp4/i);
-			if (mp4 != -1) {
-
-				// if ( jTemp[ mp4 - 1 ] === "." && jTemp[ mp4 - 2 ] === "v" ) {
-
-					//console.log( jTemp[mp4 - 1] );
-					//console.log( jTemp[mp4 - 2] );
-
-					mp4 += 5;
-					var start = jTemp.search(/file/i);
-					start += 7;
-					var finalURL = jTemp.substring(start , mp4);
-					// console.log(finalURL);
-					finalURL = finalURL.toString();
-					console.log(finalURL);
-					return finalURL;
-
-				//}
+				case "vodlocker":
+					parseVodlocker(res , body);
+					break;
+				case "gorillavid":
+					console.log("gorillavid requires future implementation");
+					sendJSONResponse( res , 200 , "null" );
+					break;
+				case "allmyvideos":
+					console.log("allmyvideos requires future implementation");
+					sendJSONResponse( res , 200 , "null" );
+					break;
+				default:
+					console.log(providerName + " requires future implementation");
+					sendJSONResponse( res , 200 , "null" );
 
 			}
-			
+
+		};
+
+
+		var parseForProvider = function( res , link ) {
+
+			console.log(" --> .... parseForProvider(" + link +")");
+
+			var x = link.split("-");
+			var baseURL = "http://w.solarmovie.ph/link/play/";
+			var finalURL = baseURL + x[1];
+			var providerName = x[0];
+
+
+			console.log("Searching --> " + finalURL);
+			request.get( finalURL , function( error , response , body ) {
+				if ( !error && response.statusCode == 200 ) {
+					//console.log(body);
+					parseSecondLayer( res , providerName ,  body )
+				}
+				else {
+					console.log("error : " + error );
+					if (NULL_COUNT < 3) {
+						NULL_COUNT += 1;
+						parseForProvider(res , link);	
+					}
+					else {
+						NULL_COUNT = 0;
+						sendJSONResponse( res , 404 , null );
+					}
+					
+				}
+			});
+
+		};
+
+	// [##############Helper Functions######################]
+
+	module.exports.parseProvider = function( req , res ) {
+		parseForProvider( res ,  req.params.obJectURL );
+
+	};
+// ========================3=======================================
+
+
+
+
+
+// POSSIBLE GARBAGE COLLECTION
+// ======================================================
+	var recursiveCallGrabPage = function( cachedURL ) {
+
+		console.log("Requesting : \n");
+		console.log(cachedURL + "\n");
+
+		request( cachedURL , function( error , response , body ) {
+			if ( !error && response.statusCode === 200 ) {
+				if (body) {
+					parseBody( res , body);
+				}
+			}
+			else {
+				if ( error  ) { console.log( error ); }
+				recursiveCallGrabPage( cachedURL );
+			}
+		});	
+
+	};
+
+
+	var theWatchTVSeriesSecondLayer = function( linkArray ) {
+
+		var mp4URLS = [];
+
+		for ( var i = 0; i < linkArray.length; ++i ) {
+			//console.log(linkArray[i]);
+
+			//if ( i === 0 ) {
+				var url = grabMP4FromProvider( linkArray[i] )
+				mp4URLS.push(url);
+				console.log(url);
+			//}
 
 		}
-	}
 
-};
+		return mp4URLS;
 
-
-
-
+	};
+// ======================================================
