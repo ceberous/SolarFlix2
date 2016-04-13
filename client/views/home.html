@@ -26,27 +26,35 @@
 			</div>
 			-->
 
-			<div ng-if="vm.displayVideo" class="row">
-				<div class="col-xs-12">
-					
+			<div ng-if="vm.displayVideo" class="row" >
+				<div class="col-xs-12" >
 					<div class="panel panel-danger">
-						<div class="panel-heading">Video</div>
-						<div class="panel-body">
+						<div class="panel-heading">
 
-						  <video id="my-video" class="video-js" controls preload="auto" width="640" height="264"
-						   data-setup="{}">
-						    <source src="{{vm.NOW_PLAYING}}" type='video/mp4'>
-						    <p class="vjs-no-js">
-						      To view this video please enable JavaScript, and consider upgrading to a web browser that
-						      <a href="http://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
-						    </p>
-						  </video>
+							<h3>{{vm.CURRENT_SHOW.name}} - {{vm.CURRENT_EPISODE}}</h3>
 
-						  <ol class="vjs-playlist"></ol>
+							<button ng-if="vm.showRetryProvider" ng-click="vm.retryProvider() "type="button" class="btn btn-warning">Retry Provider</button>
+							<!-- <button type="button" class="btn btn-warning">Next Provider</button> -->
+								
+							<button ng-if="vm.showPreviousButton" ng-click="vm.loadPrevious()" type="button" class="btn btn-primary">Previous</button>
+							<button ng-if="vm.showNextButton" ng-click="vm.loadNext()" type="button" class="btn btn-primary">Next</button>
 
+							<button ng-click="vm.toggleShuffle()" type="button" class="btn btn-success">Shuffle = {{vm.IS_SHUFFLE}}</button>
+
+						</div>
+						<div class="panel-body" id="videoPlayer">
+							<div id="removablePlayer">
+							  <video id="my-video" class="video-js" controls preload="auto" width="640" height="264"
+							   data-setup="{}">
+							    <source src="{{vm.NOW_PLAYING}}" type='video/mp4'>
+							    <p class="vjs-no-js">
+							      To view this video please enable JavaScript, and consider upgrading to a web browser that
+							      <a href="http://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+							    </p>
+							  </video>
+						  </div>
 						</div>	
 					</div>
-
 				</div>	
 			</div>
 
@@ -64,8 +72,8 @@
 									</button>
 
 									<ul class="dropdown-menu">
-										<li ng-repeat="link in season">
-											<a ng-click="vm.goToTVEpisodeLink(link)">{{link}}</a>
+										<li ng-repeat="link in season track by $index">
+											<a ng-click="vm.clickOnTVLink(link.link , link.name)">{{$index+1}}.) {{link.name}}</a>
 										</li>
 									</ul>
 								</div>

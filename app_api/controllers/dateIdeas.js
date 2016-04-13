@@ -68,16 +68,21 @@ var fs = require('fs');
 			var $linkSearch = $(".seasonEpisodeListBox a");
 			$linkSearch.add($linkSearch.find('*'));
 			$linkSearch.each( function( i , e ) {
-				var tmp = $(e).attr("href");
+				var thisC = $(e);
+				var tmp = thisC.attr("href");
 				var hasEpisodeAttachment = tmp.split("/")[4];
 				hasEpisodeAttachment = ( hasEpisodeAttachment === undefined ) ? 0 : hasEpisodeAttachment.toString().trim();
 				hasEpisodeAttachment = ( hasEpisodeAttachment.length > 0 ) ? 1 : 0;
 				//console.log(hasEpisodeAttachment);
 				if ( tmp.substring(0,4) === "/tv/" ) {
-					if ( hasEpisodeAttachment === 1 ) {
-						//console.log( $(e).attr("href") );
-						tmp = tmp.toString();
-						links.push( tmp );
+					if ( hasEpisodeAttachment === 1 && thisC.attr("title") != undefined ) {
+						
+						var obj = {
+							name: thisC.attr("title"),
+							link: tmp
+						}
+
+						links.push( obj );
 					}
 				}
 			});
