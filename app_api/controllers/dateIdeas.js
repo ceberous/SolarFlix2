@@ -70,11 +70,12 @@ var fs = require('fs');
 			$linkSearch.each( function( i , e ) {
 				var thisC = $(e);
 				var tmp = thisC.attr("href");
+				var linkCount = thisC.html();
 				var hasEpisodeAttachment = tmp.split("/")[4];
 				hasEpisodeAttachment = ( hasEpisodeAttachment === undefined ) ? 0 : hasEpisodeAttachment.toString().trim();
 				hasEpisodeAttachment = ( hasEpisodeAttachment.length > 0 ) ? 1 : 0;
 				//console.log(hasEpisodeAttachment);
-				if ( tmp.substring(0,4) === "/tv/" ) {
+				if ( tmp.substring(0,4) === "/tv/" && linkCount != "0 links" ) {
 					if ( hasEpisodeAttachment === 1 && thisC.attr("title") != undefined ) {
 						
 						var obj = {
@@ -83,6 +84,7 @@ var fs = require('fs');
 						}
 
 						links.push( obj );
+						//console.log("adding -> " + obj.link);
 					}
 				}
 			});

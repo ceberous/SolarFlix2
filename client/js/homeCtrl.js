@@ -310,6 +310,13 @@
 		// ======================Video-Controls=============================
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+		Array.prototype.remove = function( from , to ) {
+
+			var rest = this.splice( ( to || from ) + 1 || this.length );
+			this.length = from < 0 ? this.length + from : from;
+			return this.push.apply( this , rest );
+
+		};
 
 
 		// searchTV()
@@ -317,7 +324,7 @@
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 			var displayLinks = function( links ) {
 
-				//links = removeDuplicates(links);
+				// links = removeDuplicates(links);
 				
 				//var seasons = [];
 
@@ -341,24 +348,32 @@
 				vm.CURRENT_SHOW.seasons = [];
 				vm.CURRENT_SHOW.seasons.push(seasonobj);
 
+				console.log("Season Number = 1");
+
 				// sort into seasons 
 				for ( var i = links.length-1; i >= 0; --i ) {
 					
 					var seasonNumber = parseInt(links[i]["link"].split("/")[3].split("-")[1])
+					
 
 					var tmpOBJ = {
 						name: links[i]["name"],
 						link: links[i]["link"]
 					};
 
+					if ( seasonNumber === 0 ) {
+						continue;
+					}
+
 					// if (this) link's seasonNumber = the current fill space
 					if( seasonNumber === sCounter ) {
-
+						console.log("Adding --> " + tmpOBJ.link);
 						vm.CURRENT_SHOW.seasons[ sCounter-1 ].push(tmpOBJ);
 
 					} 
 					else { 
-
+						console.log("Season Number = " + seasonNumber);
+						console.log("Adding --> " + tmpOBJ.link);
 						var seasonobj = [];
 						sCounter = sCounter + 1;
 
