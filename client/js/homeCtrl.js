@@ -68,6 +68,8 @@
 		var storeForNext = false
 		var storeForPrevious = false;
 
+		var grabNextAvailable = true;
+
 		var gI = 0;
 		var links = [];
 		var capcity = 0;
@@ -128,7 +130,7 @@
 				$('#removablePlayer').remove();
 				setTimeout(function(){
 					$("#videoPlayer").append("<div id=\"removablePlayer\"><video id=\"my-video\" class=\"video-js\" controls preload=\"auto\" width=\"640\" height=\"264\"data-setup=\"{}\"><source src=\"" + newURL + "\"type='video/mp4'><p class=\"vjs-no-js\">To view this video please enable JavaScript, and consider upgrading to a web browser that<a href=\"http://videojs.com/html5-video-support/\" target=\"_blank\">supports HTML5 video</a></p></video></div>");
-				} , 2500 );				
+				} , 1000 );				
 
 			};
 
@@ -141,6 +143,80 @@
 
 			vm.loadPrevious = function() {
 				console.log("loading previous");
+
+				vm.showRetryProvider = false;
+				vm.showPreviousButton = false;
+				vm.showNextButton = false;
+
+				vm.CURRENT_SHOW.nextEpisodeLinks = [];
+				vm.CURRENT_SHOW.nextEpisodeLinks = vm.CURRENT_SHOW.currentEpisodeLinks;
+				vm.CURRENT_SHOW.currentEpisodeLinks = [];
+				vm.CURRENT_SHOW.currentEpisodeLinks = vm.CURRENT_SHOW.previousEpisodeLinks;
+				vm.CURRENT_SHOW.previousEpisodeLinks = [];
+
+				if ( !grabNextAvailable ) {
+					console.log("playing nice with vodlocker.... waiting 60 seconds");
+					alert("playing nice with vodlocker.... waiting 60 seconds");
+					setTimeout(function() {
+						var nextURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[0]);
+					} , 60000);
+				}
+				else {
+					var nextURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[0]);
+				}
+				
+				swapVideoSource(nextURL);					
+
+				vm.CURRENT_EPISODE = vm.previousEpisodeName;
+
+				var tmpA = vm.currentEpisode;
+				var tmpB = vm.currentSeason;
+				vm.currentEpisode = vm.previousEpisodeNumber;
+				vm.currentSeason = vm.previousEpisodeSeason;
+				vm.nextEpisodeNumber = tmpA;
+				vm.nextEpisodeSeason = tmpB;
+
+				vm.showRetryProvider = true;
+				vm.showNextButton = true;
+
+				isFullSweep = false;
+				storeForNext = false;
+				storeForPrevious = true;
+
+				var season, episode;
+				// are we at the first episode in the season?
+				if ( ( vm.currentEpisode - 1 ) < 1 ) {
+
+					// are we in the first season?
+					if ( vm.currentSeason === 1 ) {
+						season = vm.CURRENT_SHOW.seasons.length;
+						episode = vm.CURRENT_SHOW.seasons[ season - 1 ].length; 
+					}
+					else {
+						season = vm.currentSeason - 1;
+						episode = vm.currentEpisode - 1;
+					}
+
+				}
+				else {
+					season = vm.currentSeason;
+					episode = vm.currentEpisode - 1;
+				}
+
+				vm.previousEpisodeName = vm.CURRENT_SHOW.seasons[ season - 1 ][ episode - 1 ]["name"];
+				vm.previousEpisodeNumber = episode;
+				vm.previousEpisodeSeason = season;
+
+				episode = "episode-"+episode;
+				season = "season-"+season;
+
+				console.log("Next Episode Name = " + vm.previousEpisodeName);				
+
+				console.log("Grabbing *NEW* PREVIOUS --> " + season + " | " + episode );				
+
+				grabNextAvailable = !grabNextAvailable;
+				goToTVEpisodeLink( season , episode );
+
 			};
 
 			vm.loadNext = function() {
@@ -156,7 +232,18 @@
 				vm.CURRENT_SHOW.currentEpisodeLinks = vm.CURRENT_SHOW.nextEpisodeLinks;
 				vm.CURRENT_SHOW.nextEpisodeLinks = [];
 
-				var nextURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[0]);
+				
+				if ( !grabNextAvailable ) {
+					console.log("playing nice with vodlocker.... waiting 60 seconds");
+					alert("playing nice with vodlocker.... waiting 60 seconds");
+					setTimeout(function() {
+						var nextURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[0]);
+					} , 60000);
+				}
+				else {
+					var nextURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[0]);
+				}				
+				
 				swapVideoSource(nextURL);
 
 				vm.CURRENT_EPISODE = vm.nextEpisodeName;
@@ -169,6 +256,7 @@
 				vm.previousEpisodeSeason = tmpB;
 
 				vm.showRetryProvider = true;
+				vm.showPreviousButton = true;
 
 				isFullSweep = false;
 				storeForNext = true;
@@ -331,7 +419,7 @@
 				  		cachedCurrentSeason = vm.currentSeason; 
 				  		cachedCurrentEpisode = vm.currentEpisode;
 
-				  		player.play();
+				  		// player.play();
 
 				  	});
 
@@ -472,11 +560,11 @@
 								// are we in the first season?
 								if ( vm.currentSeason === 1 ) {
 									season = vm.CURRENT_SHOW.seasons.length;
-									episode = vm.CURRENT_SHOW.seasons[ season - 1 ].length; 
+									episode = vm.CURRENT_SHOW.seasons[ vm.CURRENT_SHOW.seasons.length - 1 ].length; 
 								}
 								else {
 									season = vm.currentSeason - 1;
-									episode = vm.currentEpisode - 1;
+									episode = vm.CURRENT_SHOW.seasons[ season - 1 ].length;
 								}
 
 							}
@@ -555,7 +643,12 @@
 				vm.currentSeason = parseInt(season.split("-")[1]);
 				vm.currentEpisode = parseInt(episode.split("-")[1]);
 
-				if ( vm.alreadyActivated === true ) {
+				if ( vm.alreadyActivated ) {
+
+					vm.CURRENT_SHOW.currentEpisodeLinks = [];
+					vm.CURRENT_SHOW.nextEpisodeLinks = [];
+					vm.CURRENT_SHOW.previousEpisodeLinks = [];
+
 
 					capcity = 0;
 					gI = 0;
@@ -563,19 +656,20 @@
 					vm.displayVideo = false;
 					vm.NOW_PLAYING = " ";
 					vm.CURRENT_EPISODE = linkName;
-					workingEpisodeGrabBag = [];
-					nextEpisodeLinks = [];
-					previousEpisodeLinks = [];
 
-					vm.alreadyActivated = false;
-					
+					$('#removablePlayer').remove();
 					setTimeout(function(){
-						goToTVEpisodeLink( season , episode );
+						$("#videoPlayer").append("<div id=\"removablePlayer\"><video id=\"my-video\" class=\"video-js\" controls preload=\"auto\" width=\"640\" height=\"264\"data-setup=\"{}\"><source src=\"{{vm.NOW_PLAYING}}\"type='video/mp4'><p class=\"vjs-no-js\">To view this video please enable JavaScript, and consider upgrading to a web browser that<a href=\"http://videojs.com/html5-video-support/\" target=\"_blank\">supports HTML5 video</a></p></video></div>");
 					} , 1000 );
+
+						
+					goToTVEpisodeLink( season , episode );	
+
 
 				}
 
 				else {
+					vm.alreadyActivated = true;
 					vm.CURRENT_EPISODE = linkName;
 					goToTVEpisodeLink( season , episode );
 				}
@@ -593,13 +687,52 @@
 					.success(function(data) {
 						console.log("  		-->} Success");
 						links = data;
-						vm.alreadyActivated = true;
 						getSecondLayer();
 					})
 					.error(function(e){
 						console.log(e);
 					})
 				;
+
+			};
+
+			vm.reset = function() {
+
+				vm.alreadyActivated = false;
+				isFullSweep = false;
+				isCurrent = false;
+				isNext = false;
+				isPrevious = false;
+				storeForNext = false
+				storeForPrevious = false;
+
+			 	grabNextAvailable = true;
+
+				gI = 0;
+				links = [];
+				capcity = 0;
+				cieling = 2;
+
+
+				vm.tvURL;
+				vm.displayVideo = false;
+				vm.showAUTOMATICLINKS = false;
+				vm.showShowLinks = false;
+
+				vm.CURRENT_SHOW = {};
+				vm.CURRENT_SHOW.currentEpisodeLinks = [];
+				vm.CURRENT_SHOW.nextEpisodeLinks = [];
+				vm.CURRENT_SHOW.previousEpisodeLinks = [];
+				returnedBackgroundEpisodeLinks = [];
+				tempEpisodeLinks = [];
+
+				vm.NOW_PLAYING = " ";
+
+				$('#removablePlayer').remove();
+				setTimeout(function(){
+					$("#videoPlayer").append("<div id=\"removablePlayer\"><video id=\"my-video\" class=\"video-js\" controls preload=\"auto\" width=\"640\" height=\"264\"data-setup=\"{}\"><source src=\"{{vm.NOW_PLAYING}}\"type='video/mp4'><p class=\"vjs-no-js\">To view this video please enable JavaScript, and consider upgrading to a web browser that<a href=\"http://videojs.com/html5-video-support/\" target=\"_blank\">supports HTML5 video</a></p></video></div>");
+				} , 1000 );
+
 
 			};
 		// ========================2=======================================
