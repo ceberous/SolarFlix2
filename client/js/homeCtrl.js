@@ -61,6 +61,18 @@
 		var maxEpisodeForSeasons = [];
 
 		vm.alreadyActivated = false;
+		var isFullSweep = false;
+		var isCurrent = false;
+		var isNext = false;
+		var isPrevious = false;
+		var storeForNext = false
+		var storeForPrevious = false;
+
+		var gI = 0;
+		var links = [];
+		var capcity = 0;
+		var cieling = 2;
+
 
 		vm.tvURL;
 		vm.displayVideo = false;
@@ -68,43 +80,18 @@
 		vm.showShowLinks = false;
 
 		vm.CURRENT_SHOW = {};
+		vm.CURRENT_SHOW.currentEpisodeLinks = [];
+		vm.CURRENT_SHOW.nextEpisodeLinks = [];
+		vm.CURRENT_SHOW.previousEpisodeLinks = [];
+		var returnedBackgroundEpisodeLinks = [];
+		var tempEpisodeLinks = [];
+
 
 		vm.currentSeason;
 		vm.currentEpisode;		
 		vm.CURRENT_EPISODE;
 
 
-
-		// Attempt AJAX Search on theWatchTVSeries.to
-		// NEED TO MIGRATE TO SERVER-SIDE CALL
-		/*
-			
-			(function(){
-
-				var searchInput;
-
-				$( "#searchTVSHOW" ).bind( 'input' , function(){
-
-					searchInput = $(this).val().toString();
-
-					if ( searchInput.length >= 3 ) {
-
-						console.log("Searching : " + searchInput + " | " + searchInput.length );
-
-						$http({
-							url: "http://thewatchseries.to/show/search-shows-json",
-							method: 'POST',
-							data: { value: searchInput }
-
-						}).success(function(result) {
-							console.log(result);
-						});
-
-			    	}
-			    });
-
-			}());
-		*/
 
 		// =================GLOBAL HELPER FUNCTIONS=========================
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -121,53 +108,6 @@
 
 			};
 
-			var decode_base64 = function(s) {
-
-			    var e = {}, i, k, v = [], r = '', w = String.fromCharCode;
-			    var n = [[65, 91], [97, 123], [48, 58], [43, 44], [47, 48]];
-
-			    for (z in n)
-			    {
-			        for (i = n[z][0]; i < n[z][1]; i++)
-			        {
-			            v.push(w(i));
-			        }
-			    }
-			    for (i = 0; i < 64; i++)
-			    {
-			        e[v[i]] = i;
-			    }
-
-			    for (i = 0; i < s.length; i+=72)
-			    {
-			        var b = 0, c, x, l = 0, o = s.substring(i, i+72);
-			        for (x = 0; x < o.length; x++)
-			        {
-			            c = e[o.charAt(x)];
-			            b = (b << 6) + c;
-			            l += 6;
-			            while (l >= 8)
-			            {
-			                r += w((b >>> (l -= 8)) % 256);
-			            }
-			         }
-			    }
-			    return r;
-
-			}; 
-
-			var decode_base64Array = function( array ) {
-
-				console.log("Decoding Base64 Array");
-
-				for ( var i = 0; i < array.length; ++i ) {
-					array[i] = decode_base64(array[i]);
-					console.log(array[i]);
-				}
-
-				return array;
-
-			};
 							// Video Controls
 		// =================GLOBAL HELPER FUNCTIONS=========================
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -194,7 +134,7 @@
 
 			vm.retryProvider = function() {
 				console.log("retry video with next link from same provider"); // right now , theres only 1 provider ... f' vodlocker
-				var newURL = $sce.trustAsResourceUrl(workingEpisodeGrabBag[1]);
+				var newURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[1] );
 				console.log("trying --> " + newURL)
 				swapVideoSource( newURL );
 			};
@@ -206,38 +146,72 @@
 			vm.loadNext = function() {
 				console.log("loading next");
 
-				var nextURL = $sce.trustAsResourceUrl(nextEpisodeLinks[0]);
+				var nextURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.nextEpisodeLinks[0]);
 				swapVideoSource(nextURL);
 
 				vm.showRetryProvider = false;
 				vm.showNextButton = false;
 				vm.showPreviousButton = false;
 
-				workingCurrentEpisodeLinks = nextEpisodeLinks;
-				previousEpisodeLinks = workingEpisodeGrabBag;
-				workingEpisodeGrabBag = workingCurrentEpisodeLinks;
+				vm.CURRENT_SHOW.previousEpisodeLinks = vm.CURRENT_SHOW.currentEpisodeLinks;
+				vm.CURRENT_SHOW.currentEpisodeLinks = vm.CURRENT_SHOW.nextEpisodeLinks;
+				vm.CURRENT_SHOW.nextEpisodeLinks = [];
+
+				vm.CURRENT_EPISODE = vm.nextEpisodeName;
+
+				var tmpA = vm.currentEpisode;
+				var tmpB = vm.currentSeason;
+				vm.currentEpisode = vm.nextEpisodeNumber;
+				vm.currentSeason = vm.nextEpisodeSeason;
+				vm.previousEpisodeNumber = tmpA;
+				vm.previousEpisodeSeason = tmpB;
 
 				vm.showRetryProvider = true;
-				vm.showPreviousButton = true;
+				// vm.showPreviousButton = true;
 
 				/// comeback2point1 --->>>>>>>>>>> 
 				// 	--->>>>>>>>> ( some future interpretation of grabbing mp4 urls for a specific link instead of tri-grouped current / future / past  )
 				/// ___________________________________________________________________________
 
-				if ( cachedCurrentEpisode + 2 < maxEpisodeForSeasons[cachedCurrentSeason - 1] ) {
-					// console.log("Next Episode = " + (vm.currentEpisode + 1) )
-					// /tv/the-office-2005/season-1/episode-1/
-					var builtURL = "/tv/" + vm.CURRENT_SHOW + "/season-" + cachedCurrentSeason +"/episode-" + ( cachedCurrentEpisode + 2 )  + "/";
-					console.log("Next UP = " + builtURL);
-					console.log(seasons[vm.currentSeason - 1 ][ cachedCurrentEpisode + 1]["name"]);
-					goToTVEpisodeLinkBACKGROUND( builtURL );
+				isFullSweep = false;
+				storeForNext = true;
+				storeForPrevious = false;
+
+				// get NEW next episode
+				var episode , season;
+				// are we the last episode in the season?
+				if ( ( vm.currentEpisode + 1 ) > vm.CURRENT_SHOW.seasons[ vm.currentSeason - 1 ].length ) {
+
+					// are we in the last season?
+					if ( vm.currentSeason === vm.CURRENT_SHOW.seasons.length ) {
+						episode = 1;
+						season = 1;
+					}
+					else {
+						episode = 1;
+						season = vm.currentSeason + 1;
+					}
+					
 				}
 				else {
-					var builtURL = "/tv/" + vm.CURRENT_SHOW + "/season-" + ( cachedCurrentSeason + 1 ) +"/episode-1/";
-					console.log("Next UP = " + builtURL);
-					console.log(seasons[vm.currentSeason][0]["name"]);
-					goToTVEpisodeLinkBACKGROUND(builtURL);
+
+					episode = vm.currentEpisode + 1;
+					season = vm.currentSeason;
+
 				}
+
+				vm.nextEpisodeNumber = episode;
+				vm.nextEpisodeSeason = season;
+
+				vm.nextEpisodeName = vm.CURRENT_SHOW.seasons[ season - 1 ][ episode - 1 ]["name"];
+				console.log("Next Episode Name = " + vm.nextEpisodeName);
+
+				episode = "episode-"+episode;
+				season = "season-"+season;
+
+				console.log("Grabbing *NEW* NEXT --> " + season + " | " + episode );				
+
+				goToTVEpisodeLink( season , episode );
 
 			};
 
@@ -248,88 +222,6 @@
 			};
 
 
-
-
-
-
-			var gI2 = 0;
-			var capcity2 = 0;
-			var cieling2 = 2;
-			var recievedValidMP4URLS = [];
-			var loadBackgroundNextVideo = function() {
-
-				console.log(" --> .... getSecondLayer() from loadBackgroundNextVideo()");
-
-				if ( ( gI2 <= recievedUnextractedData.length - 1 ) && ( capcity2 < cieling2 ) ) {
-					console.log("/api/parseProvider/" + recievedUnextractedData[gI2]);
-					$http.put("/api/parseProvider/" + recievedUnextractedData[gI2])
-						.success(function(data) {
-							
-							gI2 += 1;
-
-							if ( data.substring( data.length - 5 , data.length ) === "v.mp4" ) {
-
-								console.log("JUST RECIEVED 	--> " + data);
-								capcity2 += 1;
-
-								recievedValidMP4URLS.push(data);
-
-								loadBackgroundNextVideo();
-
-							} 
-							else {
-								loadBackgroundNextVideo();
-							}
-
-						})
-						.error(function(error){
-							console.log(error);
-						})
-					;
-
-				} 
-				else { // Finished With Episode Link Section of 
-
-					nextEpisodeLinks = [];
-					nextEpisodeLinks = recievedValidMP4URLS;
-					vm.showNextButton = true;
-
-				}
-
-
-			};
-
-
-			var workingEpisodeGrabBag = [];
-			var recievedUnextractedData = [];
-			var goToTVEpisodeLinkBACKGROUND = function( link ) {
-
-				// link should appear as : /tv/the-durrells-2016/season-1/episode-2/
-
-				capcity2 = 0;
-				gI2 = 0;
-				recievedUnextractedData = [];
-				recievedValidMP4URLS = [];
-
-				var x,season,episode;
-				
-				x = link.split("/"); 
-				season =  x[3];
-				episode = x[4];
-
-				console.log("		--> /api/specificEpisodeLink/" + vm.CURRENT_SHOW + "/" + season + "/" + episode);
-				$http.put('/api/specificEpisodeLink/' + vm.CURRENT_SHOW + "/" + season + "/" + episode )
-					.success(function(data) {
-						console.log("  		-->} Success");
-						recievedUnextractedData = data;
-						loadBackgroundNextVideo();
-					})
-					.error(function(e){
-						console.log(e);
-					})
-				;
-
-			};
 		// ======================Video-Controls=============================
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -359,24 +251,15 @@
 				
 
 				var sCounter = 1;
+
 				var seasonobj = [];
-				seasons.push(seasonobj);
-
-				var tmpSOBJ = {
-					seasonNumber: 1,
-					episodes: []
-				};
-
-				vm.CURRENT_SHOW.seasons = [tmpSOBJ];
-				vm.CURRENT_SHOW.seasons[0].seasonNumber = 1;
+				vm.CURRENT_SHOW.seasons = [];
+				vm.CURRENT_SHOW.seasons.push(seasonobj);
 
 				// sort into seasons 
 				for ( var i = links.length-1; i >= 0; --i ) {
 					
 					var seasonNumber = parseInt(links[i]["link"].split("/")[3].split("-")[1])
-					//var episode = b[3].substring( 0 , b[3].length - 5 ).substring(1);
-					//console.log("Season -> " + season + " | Episode -> " + episode + " " + links[i]);
-
 
 					var tmpOBJ = {
 						name: links[i]["name"],
@@ -385,58 +268,29 @@
 
 					// if (this) link's seasonNumber = the current fill space
 					if( seasonNumber === sCounter ) {
-						
-						seasons[sCounter-1].push(links[i]);
 
-						//vm.CURRENT_SHOW.seasons[ sCounter - 1 ].push(tmpOBJ);
-
-						vm.CURRENT_SHOW.seasons[ sCounter-1 ]["episodes"].push(tmpOBJ);
+						vm.CURRENT_SHOW.seasons[ sCounter-1 ].push(tmpOBJ);
 
 					} 
 					else { 
-						sCounter += 1;
 
-						seasons.push(seasonobj);
-						seasons[sCounter-1].push(links[i]);
+						var seasonobj = [];
+						sCounter = sCounter + 1;
 
-
-						var tmpSOBJ = {
-							seasonNumber: sCounter,
-							episodes: []
-						};
-
-						vm.CURRENT_SHOW.seasons.push(tmpSOBJ);
-
-						vm.CURRENT_SHOW.seasons[ sCounter-1 ]["episodes"].push(tmpOBJ);
+						vm.CURRENT_SHOW.seasons.push(seasonobj);
+						vm.CURRENT_SHOW.seasons[ sCounter - 1 ].push(tmpOBJ);
 
 					}
 
 				}
 
-
-
 				vm.showShowLinks = true;
-				vm.returnedSeasons = seasons;
-
-				// maxEpisodeForSeasons = [];
-				for ( var i = 0; i < seasons.length; ++i ) {
-					//console.log("Season - " + (i+1) + " <--> Last Episode = "  + seasons[i][ seasons[i].length - 1 ]);
-					maxEpisodeForSeasons.push( seasons[i][ seasons[i].length - 1 ]["link"].split("/")[4].split("-")[1] );
-				}
-
 
 				for ( var i = 0; i < vm.CURRENT_SHOW.seasons.length; ++i ) {
 
-					console.log("Season - " + ( i + 1 ));
-
-					for ( var j = 0; j < vm.CURRENT_SHOW.seasons[i]["episodes"].length; ++j ) {
-
-						console.log( vm.CURRENT_SHOW.seasons[i]["episodes"][j]["name"] );
-
-					}
+					console.log("Season - " + ( i + 1 ) + " | Max Episode = " + vm.CURRENT_SHOW.seasons[i].length );
 
 				}
-
 
 			};			
 
@@ -457,19 +311,8 @@
 		// goToTVEpisodeLink()
 		// ========================2=======================================
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-			var globalProviderURLS = [];
-			var gI = 0;
-			var unNeededCopy = [];
-			var links = [];
-			var foundMP4URLS = [];
 
-			var workingCurrentEpisodeLinks = [];
-			var currentEpisodeLinks = [];
-			var nextEpisodeLinks = [];
-			var previousEpisodeLinks = [];
-			var fillSwitch = 1;
-			var capcity = 0;
-			var cieling = 2;
+
 
 			var cachedCurrentSeason,cachedCurrentEpisode;
 
@@ -477,7 +320,7 @@
 
 			var launchPlayerControlAI = function() {
 
-				vm.NOW_PLAYING = $sce.trustAsResourceUrl(workingEpisodeGrabBag[0]);
+				vm.NOW_PLAYING = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[0] );
 				vm.displayVideo = true;
 
 				setTimeout( function() {
@@ -521,21 +364,26 @@
 
 								capcity += 1;
 
-								// push into current / next / previous
-								switch ( fillSwitch ) {
+								if ( isFullSweep ) {
 
-									case 1:
-										workingEpisodeGrabBag.push(data);
-										break;
-									case 2:
-										nextEpisodeLinks.push(data);
-										break;
-									case 3:
-										previousEpisodeLinks.push(data);
-										break;
-									default:
-										break;
+									if ( isCurrent ) {
+										console.log("STORING into currentEpisodeLinks[]");
+										vm.CURRENT_SHOW.currentEpisodeLinks.push(data);
+									}
+									if ( isNext ) {
+										console.log("STORING into nextEpisodeLinks[]");
+										vm.CURRENT_SHOW.nextEpisodeLinks.push(data);
+										console.log(vm.CURRENT_SHOW.nextEpisodeLinks[0]);
+									}
+									if ( isPrevious ) {
+										console.log("STORING into previousEpisodeLinks[]");
+										vm.CURRENT_SHOW.previousEpisodeLinks.push(data);
+										console.log(vm.CURRENT_SHOW.previousEpisodeLinks[0]);
+									}
 
+								}
+								else {
+									returnedBackgroundEpisodeLinks.push(data);
 								}
 
 								if ( vm.displayVideo === false ) {
@@ -567,89 +415,146 @@
 				} 
 				else { // Finished With Episode Link Section of 
 
-					// seasons[vm.currentSeason - 1][vm.currentEpisode - 1]["name"]
+					if ( isFullSweep ) {
 
-					links = [];
+						if ( isCurrent ) {
 
-					if ( fillSwitch === 1 ) { // if We Just Recieved the INITIAL / "clicked-on" episode link set
+							vm.showRetryProvider = true;
 
-						vm.showRetryProvider = true;
-						console.log("Current Episode");
-						for ( var i = 0; i < workingEpisodeGrabBag.length; ++i ) {
-							console.log(workingEpisodeGrabBag[i]);
-						}						
+							isCurrent = false;
+							isNext = true;
+							var episode , season;
 
-						fillSwitch = 2;
+							// get next episode
 
-						if ( cachedCurrentEpisode + 1 < maxEpisodeForSeasons[cachedCurrentSeason - 1] ) {
-							// console.log("Next Episode = " + (vm.currentEpisode + 1) )
-							// /tv/the-office-2005/season-1/episode-1/
-							var builtURL = "/tv/" + vm.CURRENT_SHOW + "/season-" + cachedCurrentSeason +"/episode-" + ( cachedCurrentEpisode + 1 )  + "/";
-							console.log("Next UP = " + builtURL);
-							vm.goToTVEpisodeLink(builtURL , seasons[vm.currentSeason - 1][vm.currentEpisode]["name"] );
-						}
-						else {
-							var builtURL = "/tv/" + vm.CURRENT_SHOW + "/season-" + ( cachedCurrentSeason + 1 ) +"/episode-1/";
-							console.log("Next UP = " + builtURL);
-							vm.goToTVEpisodeLink(builtURL , seasons[vm.currentSeason][0]["name"]);
-						}
+							// are we the last episode in the season?
+							if ( ( vm.currentEpisode + 1 ) > vm.CURRENT_SHOW.seasons[ vm.currentSeason - 1 ].length ) {
 
-					}
-					else if ( fillSwitch === 2 ) { // if We Just Recieved the NEXT episode link set
-
-						vm.showNextButton = true;
-
-						console.log("Next Episode");
-						for ( var i = 0; i < nextEpisodeLinks.length; ++i ) {
-							console.log(nextEpisodeLinks[i]);
-						}						
-
-						fillSwitch = 3;
-
-						if ( cachedCurrentEpisode - 1 < 1 ) {
-
-							if ( cachedCurrentSeason > 1 ) {
-								var builtURL = "/tv/" + vm.CURRENT_SHOW + "/season-" + totalSeasons +"/episode-" + ( maxEpisodeForSeasons[totalSeasons -1] )  + "/";
-								console.log("Next UP = " + builtURL );
-								vm.goToTVEpisodeLink(builtURL , seasons[vm.currentSeason - 2][vm.currentEpisode - 1]["name"] );
+								// are we in the last season?
+								if ( vm.currentSeason === vm.CURRENT_SHOW.seasons.length ) {
+									episode = 1;
+									season = 1;
+								}
+								else {
+									episode = 1;
+									season = vm.currentSeason + 1;
+								}
+								
 							}
 							else {
-								var builtURL = "/tv/" + vm.CURRENT_SHOW + "/season-" + totalSeasons +"/episode-" + ( maxEpisodeForSeasons[totalSeasons -1] )  + "/";
-								console.log("Next UP = " + builtURL );
-								vm.goToTVEpisodeLink(builtURL , seasons[seasons.length -1 ][ maxEpisodeForSeasons[ totalSeasons -1 ] - 1 ]["name"] );
+
+								episode = vm.currentEpisode + 1;
+								season = vm.currentSeason;
+
 							}
 
+							vm.nextEpisodeName = vm.CURRENT_SHOW.seasons[ season - 1 ][ episode - 1 ]["name"];
+							vm.nextEpisodeNumber = episode;
+							vm.nextEpisodeSeason = season;
+
+							episode = "episode-"+episode;
+							season = "season-"+season;
+
+							console.log("Grabbing NEXT --> " + season + " | " + episode );
+
+							goToTVEpisodeLink( season , episode ); // get next episode
 						}
-						else {
-							var builtURL = "/tv/" + vm.CURRENT_SHOW + "/season-" + cachedCurrentSeason +"/episode-" + ( cachedCurrentEpisode - 1 )  + "/";
-							console.log("Next UP = " + builtURL);
-							vm.goToTVEpisodeLink(builtURL , seasons[vm.currentSeason -1 ][ vm.currentEpisode - 2 ]["name"] );
+						else if ( isNext ) {
+
+							isNext = false;
+							isPrevious = true;
+
+							var episode, season;
+
+							vm.showNextButton = true;
+
+							// are we at the first episode in the season?
+							if ( ( vm.currentEpisode - 1 ) < 1 ) {
+
+								// are we in the first season?
+								if ( vm.currentSeason === 1 ) {
+									season = vm.CURRENT_SHOW.seasons.length;
+									episode = vm.CURRENT_SHOW.seasons[ season - 1 ].length; 
+								}
+								else {
+									season = vm.currentSeason - 1;
+									episode = vm.currentEpisode - 1;
+								}
+
+							}
+							else {
+								season = vm.currentSeason;
+								episode = vm.currentEpisode - 1;
+							}
+
+							vm.previousEpisodeName = vm.CURRENT_SHOW.seasons[ season - 1 ][ episode - 1 ]["name"];
+							vm.previousEpisodeNumber = episode;
+							vm.previousEpisodeSeason = season;
+
+							episode = "episode-"+episode;
+							season = "season-"+season;
+
+							console.log("Grabbing PREVIOUS --> " + season + " | " + episode );
+							goToTVEpisodeLink( season , episode ); // get previous episode
+
 						}
+						else if ( isPrevious ) {
+							isPrevious = false;
+							isFullSweep = false;
+							//getSecondLayer();
+
+							vm.showPreviousButton = true;
+
+							console.log("Successful Full-Sweep");
+							console.log("Current MP4 URL's");
+							console.log( vm.CURRENT_SHOW.currentEpisodeLinks[0] );
+							console.log( vm.CURRENT_SHOW.currentEpisodeLinks[1] );
+
+							console.log("\nNext MP4 URL's");
+							console.log( vm.CURRENT_SHOW.nextEpisodeLinks[0] );
+							console.log( vm.CURRENT_SHOW.nextEpisodeLinks[1] );
+
+							console.log("\nPrevious MP4 URL's");
+							console.log( vm.CURRENT_SHOW.previousEpisodeLinks[0] );
+							console.log( vm.CURRENT_SHOW.previousEpisodeLinks[1] );	
+
+
+						}
+
 
 					}
-					else if ( fillSwitch === 3 ) { // if We Just Recieved the PREVIOUS episode link set
+					else if ( storeForNext ) {
+						console.log("STORING into nextEpisodeLinks");
+						vm.CURRENT_SHOW.nextEpisodeLinks = returnedBackgroundEpisodeLinks;
+						returnedBackgroundEpisodeLinks = [];
+						vm.showNextButton = true;
 
-						vm.showPreviousButton = true; 
-
-						console.log("Previous Episode");
-						for ( var i = 0; i < previousEpisodeLinks.length; ++i ) {
-							console.log(previousEpisodeLinks[i]);
-						}								
-
-						fillSwitch = 4;
-
+					}
+					else if ( storeForPrevious ) {
+						console.log("STORING into previousEpisodeLinks");
+						vm.CURRENT_SHOW.previousEpisodeLinks = returnedBackgroundEpisodeLinks;
+						returnedBackgroundEpisodeLinks = [];
+						vm.showPreviousButton = true;
 					}
 
 
 				}
 
-
-
 			};
 
 			vm.clickOnTVLink = function( linkURL , linkName ) {
 
+				isFullSweep = true;
+				isCurrent = true;
 
+				var x,season,episode;
+
+				console.log( linkName + " | " + linkURL);
+				x = linkURL.split("/"); 
+				season =  x[3];
+				episode = x[4];
+				vm.currentSeason = parseInt(season.split("-")[1]);
+				vm.currentEpisode = parseInt(episode.split("-")[1]);
 
 				if ( vm.alreadyActivated === true ) {
 
@@ -666,47 +571,26 @@
 					vm.alreadyActivated = false;
 					
 					setTimeout(function(){
-						vm.goToTVEpisodeLink( linkURL , linkName );
+						goToTVEpisodeLink( season , episode );
 					} , 1000 );
 
 				}
 
 				else {
 					vm.CURRENT_EPISODE = linkName;
-					vm.goToTVEpisodeLink( linkURL , linkName );
+					goToTVEpisodeLink( season , episode );
 				}
 
 			};
 
-			vm.goToTVEpisodeLink = function( linkURL , linkName ) {
+			var goToTVEpisodeLink = function( season , episode ) {
 
-				if ( vm.alreadyActivated === true ) {
-
-					capcity = 0;
-					gI = 0;
-					links = [];
-					//foundMP4URLS = []
-					//nextEpisodeLinks = [];
-					//previousEpisodeLinks = [];
-
-					// vm.currentSeason = season;
-					// vm.currentEpisode = episode;
-					//maxEpisodeForSeasons = [];
-					vm.alreadyActivated = false;
-				}
-
-				var x,season,episode;
+				links = [];
+				gI = 0;
+				capcity = 0;
 				
-				
-				console.log( linkName + " | " + linkURL);
-				x = linkURL.split("/"); 
-				season =  x[3];
-				episode = x[4];
-				vm.currentSeason = parseInt(season.split("-")[1]);
-				vm.currentEpisode = parseInt(episode.split("-")[1]);
-
-				console.log("		--> /api/specificEpisodeLink/" + vm.CURRENT_SHOW + "/" + season + "/" + episode);
-				$http.put('/api/specificEpisodeLink/' + vm.CURRENT_SHOW + "/" + season + "/" + episode )
+				console.log("		--> /api/specificEpisodeLink/" + vm.CURRENT_SHOW.name + "/" + season + "/" + episode);
+				$http.put('/api/specificEpisodeLink/' + vm.CURRENT_SHOW.name + "/" + season + "/" + episode )
 					.success(function(data) {
 						console.log("  		-->} Success");
 						links = data;
