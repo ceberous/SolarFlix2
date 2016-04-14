@@ -128,7 +128,7 @@
 				$('#removablePlayer').remove();
 				setTimeout(function(){
 					$("#videoPlayer").append("<div id=\"removablePlayer\"><video id=\"my-video\" class=\"video-js\" controls preload=\"auto\" width=\"640\" height=\"264\"data-setup=\"{}\"><source src=\"" + newURL + "\"type='video/mp4'><p class=\"vjs-no-js\">To view this video please enable JavaScript, and consider upgrading to a web browser that<a href=\"http://videojs.com/html5-video-support/\" target=\"_blank\">supports HTML5 video</a></p></video></div>");
-				} , 1000 );				
+				} , 2500 );				
 
 			};
 
@@ -146,16 +146,18 @@
 			vm.loadNext = function() {
 				console.log("loading next");
 
-				var nextURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.nextEpisodeLinks[0]);
-				swapVideoSource(nextURL);
-
 				vm.showRetryProvider = false;
 				vm.showNextButton = false;
 				vm.showPreviousButton = false;
 
+				vm.CURRENT_SHOW.previousEpisodeLinks = [];
 				vm.CURRENT_SHOW.previousEpisodeLinks = vm.CURRENT_SHOW.currentEpisodeLinks;
+				vm.CURRENT_SHOW.currentEpisodeLinks = [];
 				vm.CURRENT_SHOW.currentEpisodeLinks = vm.CURRENT_SHOW.nextEpisodeLinks;
 				vm.CURRENT_SHOW.nextEpisodeLinks = [];
+
+				var nextURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[0]);
+				swapVideoSource(nextURL);
 
 				vm.CURRENT_EPISODE = vm.nextEpisodeName;
 
@@ -167,11 +169,6 @@
 				vm.previousEpisodeSeason = tmpB;
 
 				vm.showRetryProvider = true;
-				// vm.showPreviousButton = true;
-
-				/// comeback2point1 --->>>>>>>>>>> 
-				// 	--->>>>>>>>> ( some future interpretation of grabbing mp4 urls for a specific link instead of tri-grouped current / future / past  )
-				/// ___________________________________________________________________________
 
 				isFullSweep = false;
 				storeForNext = true;
@@ -383,6 +380,7 @@
 
 								}
 								else {
+									console.log("STORING into genereic returnedBackgroundEpisodeLinks[]");
 									returnedBackgroundEpisodeLinks.push(data);
 								}
 
@@ -526,6 +524,7 @@
 					else if ( storeForNext ) {
 						console.log("STORING into nextEpisodeLinks");
 						vm.CURRENT_SHOW.nextEpisodeLinks = returnedBackgroundEpisodeLinks;
+						console.log( vm.CURRENT_SHOW.nextEpisodeLinks[0] );
 						returnedBackgroundEpisodeLinks = [];
 						vm.showNextButton = true;
 
