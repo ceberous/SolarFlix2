@@ -197,7 +197,7 @@
 
 			vm.toshO = function() {
 				vm.reset();
-				vm.tvURL = "tosh-O-2009";
+				vm.tvURL = "tosh-0-2009";
 				vm.searchTV();
 			};
 
