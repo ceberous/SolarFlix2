@@ -219,6 +219,11 @@
 				vm.searchTV();
 			};
 
+			vm.archer = function() {
+				vm.reset();
+				vm.tvURL = "archer-2009";
+				vm.searchTV();
+			};
 
 			var removeDuplicates = function( array ) {
 
