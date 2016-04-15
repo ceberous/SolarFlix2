@@ -14,35 +14,25 @@
 			<h1 class="text-center">
 				<button ng-click="vm.searchTV()" class="btn btn-success">Search TV Show</button>
 				<button ng-click="vm.reset()" class="btn btn-danger">RESET</button>
+				<button ng-if="vm.showShuffleButton" ng-click="vm.toggleShuffle()" type="button" class="btn btn-success">Shuffle = {{vm.IS_SHUFFLE}}</button>
 			</h1>
 
-
-			<!--
-			<div class="ui-widget">
-  				<label for="city">Your city: </label>
-  				<input id="searchTVSHOW">
-			</div>
- 
-			<div class="ui-widget" style="margin-top:2em; font-family:Arial">
-			  Result:
-			  <div id="log" style="height: 200px; width: 300px; overflow: auto;" class="ui-widget-content"></div>
-			</div>
-			-->
+			<h1 ng-if="vm.displayVideo">
+				{{vm.CURRENT_SHOW.name}}
+			</h1>
 
 			<div ng-if="vm.displayVideo" class="row" >
 				<div class="col-xs-12" >
 					<div class="panel panel-danger">
 						<div class="panel-heading">
 
-							<h3>{{vm.CURRENT_SHOW.name}} - {{vm.CURRENT_EPISODE}}</h3>
+							<h3>Season-{{vm.currentSeason}} Episode-{{vm.currentEpisode}} - {{vm.CURRENT_EPISODE_NAME}}</h3>
 
 							<button ng-if="vm.showRetryProvider" ng-click="vm.retryProvider() "type="button" class="btn btn-warning">Retry Provider</button>
 							<!-- <button type="button" class="btn btn-warning">Next Provider</button> -->
 								
 							<button ng-if="vm.showPreviousButton" ng-click="vm.loadPrevious()" type="button" class="btn btn-primary">Previous</button>
 							<button ng-if="vm.showNextButton" ng-click="vm.loadNext()" type="button" class="btn btn-primary">Next</button>
-
-							<button ng-click="vm.toggleShuffle()" type="button" class="btn btn-success">Shuffle = {{vm.IS_SHUFFLE}}</button>
 
 						</div>
 						<div class="panel-body" id="videoPlayer">

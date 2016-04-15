@@ -67,14 +67,18 @@
 		var isPrevious = false;
 		var storeForNext = false
 		var storeForPrevious = false;
+		var storeForRandom = false;
+		var storeForRandomFuture = false;
+		var displayRandom = false;
 
 		var grabNextAvailable = true;
+		var needToDisplayWhenRandomFinishes = true;
 
 		var gI = 0;
 		var links = [];
 		var capcity = 0;
 		var cieling = 2;
-
+		var providerCounter = 1;
 
 		vm.tvURL;
 		vm.displayVideo = false;
@@ -85,13 +89,14 @@
 		vm.CURRENT_SHOW.currentEpisodeLinks = [];
 		vm.CURRENT_SHOW.nextEpisodeLinks = [];
 		vm.CURRENT_SHOW.previousEpisodeLinks = [];
+		vm.CURRENT_SHOW.randomlyGrabbedLinks = [];
 		var returnedBackgroundEpisodeLinks = [];
 		var tempEpisodeLinks = [];
 
 
 		vm.currentSeason;
 		vm.currentEpisode;		
-		vm.CURRENT_EPISODE;
+		vm.CURRENT_EPISODE_NAME;
 
 
 
@@ -110,6 +115,15 @@
 
 			};
 
+			Array.prototype.remove = function( from , to ) {
+
+				var rest = this.splice( ( to || from ) + 1 || this.length );
+				this.length = from < 0 ? this.length + from : from;
+				return this.push.apply( this , rest );
+
+			};
+
+
 							// Video Controls
 		// =================GLOBAL HELPER FUNCTIONS=========================
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -123,6 +137,7 @@
 			vm.showRetryProvider = false;
 			vm.showPreviousButton = false;
 			vm.showNextButton = false;
+			vm.showShuffleButton = false;
 
 			var swapVideoSource = function( newURL ) {
 
@@ -135,10 +150,19 @@
 			};
 
 			vm.retryProvider = function() {
-				console.log("retry video with next link from same provider"); // right now , theres only 1 provider ... f' vodlocker
-				var newURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[1] );
-				console.log("trying --> " + newURL)
-				swapVideoSource( newURL );
+
+				if ( providerCounter <= vm.CURRENT_SHOW.currentEpisodeLinks.length ) {
+
+					console.log("retry video with next link from same provider"); // right now , theres only 1 provider ... f' vodlocker
+					var newURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[providerCounter] );
+				
+					providerCounter += 1;
+
+					console.log("trying --> " + newURL)	
+					swapVideoSource( newURL );
+				}
+
+
 			};
 
 			vm.loadPrevious = function() {
@@ -153,21 +177,12 @@
 				vm.CURRENT_SHOW.currentEpisodeLinks = [];
 				vm.CURRENT_SHOW.currentEpisodeLinks = vm.CURRENT_SHOW.previousEpisodeLinks;
 				vm.CURRENT_SHOW.previousEpisodeLinks = [];
-
-				if ( !grabNextAvailable ) {
-					console.log("playing nice with vodlocker.... waiting 60 seconds");
-					alert("playing nice with vodlocker.... waiting 60 seconds");
-					setTimeout(function() {
-						var nextURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[0]);
-					} , 60000);
-				}
-				else {
-					var nextURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[0]);
-				}
+				retryProvider = 1;
 				
+				var nextURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[0]);
 				swapVideoSource(nextURL);					
 
-				vm.CURRENT_EPISODE = vm.previousEpisodeName;
+				vm.CURRENT_EPISODE_NAME = vm.previousEpisodeName;
 
 				var tmpA = vm.currentEpisode;
 				var tmpB = vm.currentSeason;
@@ -181,6 +196,7 @@
 
 				isFullSweep = false;
 				storeForNext = false;
+				storeForRandom = false;
 				storeForPrevious = true;
 
 				var season, episode;
@@ -194,7 +210,7 @@
 					}
 					else {
 						season = vm.currentSeason - 1;
-						episode = vm.currentEpisode - 1;
+						episode = vm.CURRENT_SHOW.seasons[ season - 1 ].length;
 					}
 
 				}
@@ -219,7 +235,62 @@
 
 			};
 
+			var loadRandom = function() {
+
+				if ( displayRandom ) {
+					vm.CURRENT_SHOW.currentEpisodeLinks = [];
+					vm.CURRENT_SHOW.currentEpisodeLinks = vm.CURRENT_SHOW.randomlyGrabbedLinks;
+					vm.randomlyGrabbedLinks = [];
+					var newURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[0] );
+					vm.displayVideo = true;
+					vm.CURRENT_EPISODE_NAME = vm.nextRandomEpisodeName;
+					vm.currentEpisode = vm.nextRandomEpisodeNumber;
+					vm.currentSeason = vm.nextRandomEpisodeSeason;
+
+					displayRandom = false;
+					setTimeout(function(){
+						swapVideoSource( newURL );
+					} , 1000);
+				}
+
+				var episode , season;
+				season = Math.floor( Math.random() * ( vm.CURRENT_SHOW.seasons.length - 1 + 1 ) ) + 1;
+				episode = Math.floor( Math.random() * ( vm.CURRENT_SHOW.seasons[ season - 1 ].length - 1 + 1 )  ) + 1;
+			
+				vm.nextRandomEpisodeName = vm.CURRENT_SHOW.seasons[ season - 1 ][ episode - 1 ]["name"];
+				vm.nextRandomEpisodeNumber = episode;
+				vm.nextRandomEpisodeSeason = season;
+
+				vm.showRetryProvider = false;
+				vm.showNextButton = false;
+				vm.showPreviousButton = false;
+
+				isFullSweep = false;
+				storeForNext = false;
+				storeForPrevious = false;
+				storeForRandom = false;
+				storeForRandomFuture = true;
+
+				episode = "episode-"+episode;
+				season = "season-"+season;				
+
+				console.log("Grabbing *NEW* RANDOM-FUTURE --> " + season + " | " + episode );
+				goToTVEpisodeLink( season , episode );		
+
+			};
+
 			vm.loadNext = function() {
+
+				if ( vm.IS_SHUFFLE ) {
+					console.log("loading a random clip");
+					displayRandom = true;
+					vm.CURRENT_SHOW.randomlyGrabbedLinks = []
+					vm.CURRENT_SHOW.randomlyGrabbedLinks = vm.CURRENT_SHOW.randomlyGrabbedFutureLinks;
+					vm.CURRENT_SHOW.randomlyGrabbedFutureLinks = [];
+					loadRandom();
+					return;
+				}
+
 				console.log("loading next");
 
 				vm.showRetryProvider = false;
@@ -231,22 +302,12 @@
 				vm.CURRENT_SHOW.currentEpisodeLinks = [];
 				vm.CURRENT_SHOW.currentEpisodeLinks = vm.CURRENT_SHOW.nextEpisodeLinks;
 				vm.CURRENT_SHOW.nextEpisodeLinks = [];
+				retryProvider = 1;
 
-				
-				if ( !grabNextAvailable ) {
-					console.log("playing nice with vodlocker.... waiting 60 seconds");
-					alert("playing nice with vodlocker.... waiting 60 seconds");
-					setTimeout(function() {
-						var nextURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[0]);
-					} , 60000);
-				}
-				else {
-					var nextURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[0]);
-				}				
-				
+				var nextURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[0]);
 				swapVideoSource(nextURL);
 
-				vm.CURRENT_EPISODE = vm.nextEpisodeName;
+				vm.CURRENT_EPISODE_NAME = vm.nextEpisodeName;
 
 				var tmpA = vm.currentEpisode;
 				var tmpB = vm.currentSeason;
@@ -260,10 +321,13 @@
 
 				isFullSweep = false;
 				storeForNext = true;
+				storeForRandom = false;
 				storeForPrevious = false;
+
 
 				// get NEW next episode
 				var episode , season;
+
 				// are we the last episode in the season?
 				if ( ( vm.currentEpisode + 1 ) > vm.CURRENT_SHOW.seasons[ vm.currentSeason - 1 ].length ) {
 
@@ -302,7 +366,18 @@
 
 			vm.toggleShuffle = function() {
 				console.log("toggling random...");
+
 				vm.IS_SHUFFLE = !vm.IS_SHUFFLE;
+
+				if ( vm.IS_SHUFFLE && vm.CURRENT_SHOW.randomlyGrabbedLinks.length > 1 ) {
+					displayRandom = true;
+					storeForRandomFuture = true;
+					loadRandom();
+				}
+				if ( !vm.IS_SHUFFLE ) {
+					vm.reset()
+				}
+				
 				console.log("vm.IS_SHUFFLE is now: = " + vm.IS_SHUFFLE);
 			};
 
@@ -310,18 +385,45 @@
 		// ======================Video-Controls=============================
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-		Array.prototype.remove = function( from , to ) {
-
-			var rest = this.splice( ( to || from ) + 1 || this.length );
-			this.length = from < 0 ? this.length + from : from;
-			return this.push.apply( this , rest );
-
-		};
 
 
 		// searchTV()
 		// ========================1=======================================
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			var loadBackgroundRandom = function() {
+
+				var episode , season;
+				season = Math.floor( Math.random() * ( vm.CURRENT_SHOW.seasons.length - 1 + 1 ) ) + 1;
+				episode = Math.floor( Math.random() * ( vm.CURRENT_SHOW.seasons[ season - 1 ].length - 1 + 1 )  ) + 1;
+			
+
+				vm.nextRandomEpisodeName = vm.CURRENT_SHOW.seasons[ season - 1 ][ episode - 1 ]["name"];
+				vm.nextRandomEpisodeSeason = season;
+				vm.nextRandomEpisodeNumber = episode;
+				vm.nextEpisodeNumber = episode;
+				vm.nextEpisodeSeason = season;
+
+				vm.showRetryProvider = false;
+				vm.showNextButton = false;
+				vm.showPreviousButton = false;
+
+				isFullSweep = false;
+				storeForNext = false;
+				storeForPrevious = false;
+				storeForRandomFuture = false;
+				storeForRandom = true;
+
+
+				episode = "episode-"+episode;
+				season = "season-"+season;
+
+				console.log("Grabbing *NEW* RANDOM --> " + season + " | " + episode );				
+
+				goToTVEpisodeLink( season , episode );		
+
+			};		
+
+
 			var displayLinks = function( links ) {
 
 				// links = removeDuplicates(links);
@@ -348,7 +450,7 @@
 				vm.CURRENT_SHOW.seasons = [];
 				vm.CURRENT_SHOW.seasons.push(seasonobj);
 
-				console.log("Season Number = 1");
+				//console.log("Season Number = 1");
 
 				// sort into seasons 
 				for ( var i = links.length-1; i >= 0; --i ) {
@@ -367,13 +469,13 @@
 
 					// if (this) link's seasonNumber = the current fill space
 					if( seasonNumber === sCounter ) {
-						console.log("Adding --> " + tmpOBJ.link);
+						//console.log("Adding --> " + tmpOBJ.link);
 						vm.CURRENT_SHOW.seasons[ sCounter-1 ].push(tmpOBJ);
 
 					} 
 					else { 
-						console.log("Season Number = " + seasonNumber);
-						console.log("Adding --> " + tmpOBJ.link);
+						//console.log("Season Number = " + seasonNumber);
+						//console.log("Adding --> " + tmpOBJ.link);
 						var seasonobj = [];
 						sCounter = sCounter + 1;
 
@@ -391,6 +493,8 @@
 					console.log("Season - " + ( i + 1 ) + " | Max Episode = " + vm.CURRENT_SHOW.seasons[i].length );
 
 				}
+
+				loadBackgroundRandom();
 
 			};			
 
@@ -488,9 +592,9 @@
 								}
 
 								if ( vm.displayVideo === false ) {
-									launchPlayerControlAI();
+									// launchPlayerControlAI();
 								}
-								else {
+
 									if ( capcity < cieling ) {
 										getSecondLayer();
 									}
@@ -498,7 +602,7 @@
 										gI = links.length + 1;
 										getSecondLayer();
 									}
-								}
+
 
 
 							} 
@@ -605,6 +709,7 @@
 							//getSecondLayer();
 
 							vm.showPreviousButton = true;
+							vm.showNextButton = true;
 
 							console.log("Successful Full-Sweep");
 							console.log("Current MP4 URL's");
@@ -629,14 +734,70 @@
 						vm.CURRENT_SHOW.nextEpisodeLinks = returnedBackgroundEpisodeLinks;
 						console.log( vm.CURRENT_SHOW.nextEpisodeLinks[0] );
 						returnedBackgroundEpisodeLinks = [];
-						vm.showNextButton = true;
+
+						if ( !grabNextAvailable ) {
+							console.log("playing nice with vodlocker.... waiting 60 seconds");
+							alert("playing nice with vodlocker.... waiting 60 seconds");
+							setTimeout(function() {
+								grabNextAvailable = !grabNextAvailable;
+								vm.showPreviousButton = true;
+								vm.showNextButton = true;
+							} , 60000);
+						}
+						else {
+							grabNextAvailable = !grabNextAvailable;
+							vm.showNextButton = true;
+							vm.showPreviousButton = true;
+						}
 
 					}
 					else if ( storeForPrevious ) {
 						console.log("STORING into previousEpisodeLinks");
+
 						vm.CURRENT_SHOW.previousEpisodeLinks = returnedBackgroundEpisodeLinks;
 						returnedBackgroundEpisodeLinks = [];
-						vm.showPreviousButton = true;
+
+						if ( !grabNextAvailable ) {
+							console.log("playing nice with vodlocker.... waiting 60 seconds");
+							alert("playing nice with vodlocker.... waiting 60 seconds");
+							setTimeout(function() {
+								grabNextAvailable = !grabNextAvailable;
+								vm.showPreviousButton = true;
+								vm.showNextButton = true;
+							} , 60000);
+						}
+						else {
+							grabNextAvailable = !grabNextAvailable;
+							vm.showPreviousButton = true;
+							vm.showNextButton = true;
+						}
+
+					}
+					else  if ( storeForRandom ) {
+
+						console.log("STORING into randomlyGrabbedLinks[]");
+
+						vm.CURRENT_SHOW.randomlyGrabbedLinks = [];
+						vm.CURRENT_SHOW.randomlyGrabbedLinks = returnedBackgroundEpisodeLinks;
+						returnedBackgroundEpisodeLinks = [];
+
+						storeForRandom = false;
+						vm.showRetryProvider = true;
+						vm.showShuffleButton = true;
+
+					}
+					else if ( storeForRandomFuture ) {
+
+						console.log("STORING into randomlyGrabbedFutureLinks[]");
+
+						vm.CURRENT_SHOW.randomlyGrabbedFutureLinks = [];
+						vm.CURRENT_SHOW.randomlyGrabbedFutureLinks = returnedBackgroundEpisodeLinks;
+						returnedBackgroundEpisodeLinks = [];
+
+						vm.showRetryProvider = true;
+						vm.showNextButton = true;
+						storeForRandomFuture = false;	
+
 					}
 
 
@@ -664,13 +825,13 @@
 					vm.CURRENT_SHOW.nextEpisodeLinks = [];
 					vm.CURRENT_SHOW.previousEpisodeLinks = [];
 
-
+					retryProvider = 1;
 					capcity = 0;
 					gI = 0;
 					links = [];
 					vm.displayVideo = false;
 					vm.NOW_PLAYING = " ";
-					vm.CURRENT_EPISODE = linkName;
+					vm.CURRENT_EPISODE_NAME = linkName;
 
 					$('#removablePlayer').remove();
 					setTimeout(function(){
@@ -685,7 +846,7 @@
 
 				else {
 					vm.alreadyActivated = true;
-					vm.CURRENT_EPISODE = linkName;
+					vm.CURRENT_EPISODE_NAME = linkName;
 					goToTVEpisodeLink( season , episode );
 				}
 
@@ -713,6 +874,14 @@
 
 			vm.reset = function() {
 
+
+
+				storeForRandom = false;
+				storeForRandomFuture = false;
+				displayRandom = false;
+
+				needToDisplayWhenRandomFinishes = true;
+
 				vm.alreadyActivated = false;
 				isFullSweep = false;
 				isCurrent = false;
@@ -727,7 +896,7 @@
 				links = [];
 				capcity = 0;
 				cieling = 2;
-
+				retryProvider = 1;
 
 				vm.tvURL;
 				vm.displayVideo = false;
