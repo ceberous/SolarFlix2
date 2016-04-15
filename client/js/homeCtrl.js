@@ -625,6 +625,8 @@
 
 						if ( isCurrent ) {
 
+							launchPlayerControlAI();
+							
 							vm.showRetryProvider = true;
 
 							isCurrent = false;
@@ -725,7 +727,7 @@
 							console.log( vm.CURRENT_SHOW.previousEpisodeLinks[0] );
 							console.log( vm.CURRENT_SHOW.previousEpisodeLinks[1] );
 
-							launchPlayerControlAI();
+
 
 
 						}
