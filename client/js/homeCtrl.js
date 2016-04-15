@@ -488,14 +488,17 @@
 
 				vm.IS_SHUFFLE = !vm.IS_SHUFFLE;
 
-				if ( vm.IS_SHUFFLE && vm.CURRENT_SHOW.randomlyGrabbedLinks != undefined && vm.CURRENT_SHOW.randomlyGrabbedLinks.length > 1 ) {
+				if ( vm.IS_SHUFFLE && vm.CURRENT_SHOW.randomlyGrabbedLinks != undefined ) {
 					displayRandom = true;
 					storeForRandomFuture = true;
 					loadRandom();
 				}else {
 					storeForRandom = true;
 					storeForRandomFuture = false;
-					loadBackgroundRandom();
+					if ( vm.CURRENT_SHOW.seasons.length > 0 ) {
+						loadBackgroundRandom();
+					}
+					
 				}
 				if ( !vm.IS_SHUFFLE ) {
 					vm.reset()
@@ -1001,8 +1004,6 @@
 
 			vm.reset = function() {
 
-
-
 				storeForRandom = false;
 				storeForRandomFuture = false;
 				displayRandom = false;
@@ -1025,9 +1026,14 @@
 				cieling = 2;
 				retryProvider = 1;
 
-				vm.tvURL;
+				vm.tvURL = " ";
 				vm.showAUTOMATICLINKS = false;
 				vm.showShowLinks = false;
+
+				vm.CURRENT_SHOW.name = " ";
+				vm.currentSeason = " ";
+				vm.currentEpisode = " ";
+				vm.CURRENT_EPISODE_NAME = " ";
 
 				vm.CURRENT_SHOW = {};
 				vm.CURRENT_SHOW.currentEpisodeLinks = [];
