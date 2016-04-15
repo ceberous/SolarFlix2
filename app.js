@@ -28,18 +28,20 @@ allowCrossDomain = function(req, res, next) {
 app.engine('html', require('ejs').renderFile);
 app.set('view engine', 'html');
 app.use(logger('dev'));
-app.use(allowCrossDomain);
+//app.use(allowCrossDomain);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'client')));
 
+/*
 app.use( function( req , res , next ){
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
 });
+*/
 
 // heroku http bull shit
 if ( app.get('env') === 'production' ) {

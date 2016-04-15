@@ -1,6 +1,6 @@
 {
   "name": "WebCrawler",
-  "version": "0.1.1",
+  "version": "0.1.1-2",
   "main": "www.js",
   "start": "www.js",
   "dependencies": {
@@ -19,5 +19,9 @@
   },
   "engines": {
     "node": "0.12.2"
+  },
+  "subdomain": "solarflix",
+  "scripts": {
+    "start": "www.js"
   }
 }
