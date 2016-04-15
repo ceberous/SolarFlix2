@@ -44,18 +44,18 @@ app.use( function( req , res , next ){
 */
 
 // heroku http bull shit
-if ( app.get('env') === 'production' ) {
-    app.use( '*' , function( err , req , res , next ){
-        
-        if ( req.headers['x-forwarded-proto'] != 'https' ) {
-            return res.redirect( [ 'https://' , req.get('Host') , req.url ].join('') );
-        }
-        else {
-            next();
-        }
 
-    });
-}
+app.use( '*' , function( err , req , res , next ){
+    
+    if ( req.headers['x-forwarded-proto'] != 'https' ) {
+        return res.redirect( [ 'https://' , req.get('Host') , req.url ].join('') );
+    }
+    else {
+        next();
+    }
+
+});
+
 
 app.all('/' , function(req , res , next){
     res.sendFile('index.html' , {root: __dirname });
