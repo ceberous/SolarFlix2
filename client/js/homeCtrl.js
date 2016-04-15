@@ -103,10 +103,46 @@
 		// =================GLOBAL HELPER FUNCTIONS=========================
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-			vm.setShow = function() {
+			vm.theOffice = function() {
+				console.log("searching the office");
 				vm.reset();
+				vm.tvURL = "the-office-2005";
 				vm.searchTV();
 			};
+
+			vm.southPark = function() {
+				vm.reset();
+				vm.tvURL = "south-park-1997";
+				vm.searchTV();
+			};
+
+			vm.familyGuy = function() {
+				vm.reset();
+				vm.tvURL = "family-guy-1999";
+				vm.searchTV();
+			};
+
+			vm.americanDad = function() {
+				vm.reset();
+				vm.tvURL = "american-dad-2005";
+				vm.searchTV();
+			};
+
+			vm.workaholics = function() {
+				vm.reset();
+				vm.tvURL = "workaholics-2011";
+				vm.searchTV();
+			};
+
+			vm.broadCity = function() {
+				vm.reset();
+				vm.tvURL = "broad-city-2014";
+				vm.searchTV();
+			};
+
+	
+
+
 
 			var removeDuplicates = function( array ) {
 
