@@ -104,7 +104,8 @@
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 			vm.setShow = function() {
-				vm.tvURL = "the-office-2005";
+				vm.reset();
+				vm.searchTV();
 			};
 
 			var removeDuplicates = function( array ) {
@@ -722,7 +723,9 @@
 
 							console.log("\nPrevious MP4 URL's");
 							console.log( vm.CURRENT_SHOW.previousEpisodeLinks[0] );
-							console.log( vm.CURRENT_SHOW.previousEpisodeLinks[1] );	
+							console.log( vm.CURRENT_SHOW.previousEpisodeLinks[1] );
+
+							launchPlayerControlAI();
 
 
 						}
