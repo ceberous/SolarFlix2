@@ -356,6 +356,7 @@
 			var loadRandom = function() {
 
 				if ( displayRandom ) {
+					console.log("displayRandom = true");
 					vm.CURRENT_SHOW.currentEpisodeLinks = [];
 					vm.CURRENT_SHOW.currentEpisodeLinks = vm.CURRENT_SHOW.randomlyGrabbedLinks;
 					vm.randomlyGrabbedLinks = [];
@@ -487,10 +488,14 @@
 
 				vm.IS_SHUFFLE = !vm.IS_SHUFFLE;
 
-				if ( vm.IS_SHUFFLE && vm.CURRENT_SHOW.randomlyGrabbedLinks.length > 1 ) {
+				if ( vm.IS_SHUFFLE && vm.CURRENT_SHOW.randomlyGrabbedLinks != undefined && vm.CURRENT_SHOW.randomlyGrabbedLinks.length > 1 ) {
 					displayRandom = true;
 					storeForRandomFuture = true;
 					loadRandom();
+				}else {
+					storeForRandom = true;
+					storeForRandomFuture = false;
+					loadBackgroundRandom();
 				}
 				if ( !vm.IS_SHUFFLE ) {
 					vm.reset()
@@ -1021,7 +1026,6 @@
 				retryProvider = 1;
 
 				vm.tvURL;
-				vm.displayVideo = false;
 				vm.showAUTOMATICLINKS = false;
 				vm.showShowLinks = false;
 
