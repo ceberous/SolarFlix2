@@ -140,8 +140,84 @@
 				vm.searchTV();
 			};
 
-	
+			vm.bobsBurgers = function() {
+				vm.reset();
+				vm.tvURL = "bobs-burgers-2011";
+				vm.searchTV();
+			};	
 
+			vm.newGirl = function() {
+				vm.reset();
+				vm.tvURL = "new-girl-2014";
+				vm.searchTV();
+			};
+
+			vm.portlandia = function() {
+				vm.reset();
+				vm.tvURL = "portlandia-2011";
+				vm.searchTV();
+			};
+
+
+			vm.adamDevinesHouseParty = function() {
+				vm.reset();
+				vm.tvURL = "adam-devines-house-party-2013";
+				vm.searchTV();
+			};
+
+			vm.theBigBangTheory = function() {
+				vm.reset();
+				vm.tvURL = "the-big-bang-theory-2007";
+				vm.searchTV();
+			};
+
+			vm.limitless = function() {
+				vm.reset();
+				vm.tvURL = "limitless-2015";
+				vm.searchTV();
+			};
+
+			vm.scorpion = function() {
+				vm.reset();
+				vm.tvURL = "scorpion-2014";
+				vm.searchTV();
+			};
+
+			vm.faceOff = function() {
+				vm.reset();
+				vm.tvURL = "face-off-2011";
+				vm.searchTV();
+			};
+
+			vm.cakeWars = function() {
+				vm.reset();
+				vm.tvURL = "cake-wars-2015";
+				vm.searchTV();
+			};
+
+			vm.toshO = function() {
+				vm.reset();
+				vm.tvURL = "tosh-O-2009";
+				vm.searchTV();
+			};
+
+			vm.tinyHouseNation = function() {
+				vm.reset();
+				vm.tvURL = "tiny-house-nation-2014";
+				vm.searchTV();
+			};
+
+			vm.projectRunwayAllstars = function() {
+				vm.reset();
+				vm.tvURL = "project-runway-all-stars-2012";
+				vm.searchTV();
+			};
+
+			vm.inkMasters = function() {
+				vm.reset();
+				vm.tvURL = "ink-master-2012";
+				vm.searchTV();
+			};
 
 
 			var removeDuplicates = function( array ) {
