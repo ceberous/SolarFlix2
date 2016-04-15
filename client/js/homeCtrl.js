@@ -275,9 +275,15 @@
 					var newURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[providerCounter] );
 				
 					providerCounter += 1;
-
-					console.log("trying --> " + newURL)	
-					swapVideoSource( newURL );
+					vm.showPreviousButton = true;
+					vm.showNextButton = true;
+					if ( newURL != undefined ) {
+						console.log("trying --> " + newURL)	
+						swapVideoSource( newURL );
+					}
+				}
+				else {
+					providerCounter = 1;
 				}
 
 
@@ -298,6 +304,10 @@
 				retryProvider = 1;
 				
 				var nextURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[0]);
+				
+				if ( nextURL === undefined ) {
+					return;
+				}
 				swapVideoSource(nextURL);					
 
 				vm.CURRENT_EPISODE_NAME = vm.previousEpisodeName;
@@ -361,6 +371,10 @@
 					vm.CURRENT_SHOW.currentEpisodeLinks = vm.CURRENT_SHOW.randomlyGrabbedLinks;
 					vm.randomlyGrabbedLinks = [];
 					var newURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[0] );
+					if (newURL === undefined) {
+						providerCounter += 1;
+						newURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[1] );
+					}
 					vm.displayVideo = true;
 					vm.CURRENT_EPISODE_NAME = vm.nextRandomEpisodeName;
 					vm.currentEpisode = vm.nextRandomEpisodeNumber;
@@ -495,10 +509,10 @@
 				}else {
 					storeForRandom = true;
 					storeForRandomFuture = false;
-					if ( vm.CURRENT_SHOW.seasons.length > 0 ) {
+					if ( vm.CURRENT_SHOW.seasons != undefined && vm.CURRENT_SHOW.seasons.length > 0 ) {
 						loadBackgroundRandom();
 					}
-					
+
 				}
 				if ( !vm.IS_SHUFFLE ) {
 					vm.reset()
@@ -872,7 +886,7 @@
 								grabNextAvailable = !grabNextAvailable;
 								vm.showPreviousButton = true;
 								vm.showNextButton = true;
-							} , 60000);
+							} , 20000);
 						}
 						else {
 							grabNextAvailable = !grabNextAvailable;
@@ -894,7 +908,7 @@
 								grabNextAvailable = !grabNextAvailable;
 								vm.showPreviousButton = true;
 								vm.showNextButton = true;
-							} , 60000);
+							} , 20000);
 						}
 						else {
 							grabNextAvailable = !grabNextAvailable;
@@ -909,6 +923,11 @@
 
 						vm.CURRENT_SHOW.randomlyGrabbedLinks = [];
 						vm.CURRENT_SHOW.randomlyGrabbedLinks = returnedBackgroundEpisodeLinks;
+
+						console.log( vm.CURRENT_SHOW.randomlyGrabbedLinks[0] );
+						console.log( vm.CURRENT_SHOW.randomlyGrabbedLinks[1] );
+
+
 						returnedBackgroundEpisodeLinks = [];
 
 						storeForRandom = false;
