@@ -225,6 +225,55 @@
 				vm.searchTV();
 			};
 
+			vm.kendraOnTop = function() {
+				vm.reset();
+				vm.tvURL = "kendra-on-top-2012";
+				vm.searchTV();
+			};
+
+
+			vm.adventureTime = function() {
+				vm.reset();
+				vm.tvURL = "adventure-time-2010";
+				vm.searchTV();
+			};
+
+			vm.theLastManOnEarth = function() {
+				vm.reset();
+				vm.tvURL = "the-last-man-on-earth-2015";
+				vm.searchTV();
+			};
+
+			vm.howItsMade = function() {
+				vm.reset();
+				vm.tvURL = "how-it-s-made-2001";
+				vm.searchTV();
+			};
+
+			vm.americanNinjaWarrior = function() {
+				vm.reset();
+				vm.tvURL = "american-ninja-warrior-2009";
+				vm.searchTV();
+			};
+
+			vm.futurama = function() {
+				vm.reset();
+				vm.tvURL = "futurama-1999";
+				vm.searchTV();
+			};
+
+			vm.trailerParkBoys = function() {
+				vm.reset();
+				vm.tvURL = "trailer-park-boys-2001";
+				vm.searchTV();
+			};
+
+			vm.theClevelandShow = function() {
+				vm.reset();
+				vm.tvURL = "the-cleveland-show-2009";
+				vm.searchTV();
+			};			
+
 			var removeDuplicates = function( array ) {
 
 				return array.filter( function( item , pos , ary ) {
@@ -262,8 +311,15 @@
 				console.log("swapping source TO --> " + newURL);
 				$('#removablePlayer').remove();
 				setTimeout(function(){
-					$("#videoPlayer").append("<div id=\"removablePlayer\"><video id=\"my-video\" class=\"video-js\" controls preload=\"auto\" width=\"640\" height=\"264\"data-setup=\"{}\"><source src=\"" + newURL + "\"type='video/mp4'><p class=\"vjs-no-js\">To view this video please enable JavaScript, and consider upgrading to a web browser that<a href=\"http://videojs.com/html5-video-support/\" target=\"_blank\">supports HTML5 video</a></p></video></div>");
-				} , 1000 );				
+					$("#videoPlayer").append("<div id=\"removablePlayer\"><video id=\"my-video2\" class=\"video-js\" controls preload=\"auto\" width=\"640\" height=\"264\"data-setup=\"{}\"><source src=\"" + newURL + "\"type='video/mp4'><p class=\"vjs-no-js\">To view this video please enable JavaScript, and consider upgrading to a web browser that<a href=\"http://videojs.com/html5-video-support/\" target=\"_blank\">supports HTML5 video</a></p></video></div>");
+
+
+				} , 2000 );
+
+
+				/*
+				$('#VLCHook').append( "<object type=\"application/x-vlc-plugin\" data=\"" + newURL + "\"width=\"400\" height=\"300\" id=\"video1\"><param name=\"movie\" value=\"" + newURL + "\"/><embed type=\"application/x-vlc-plugin\" name=\"video1\"autoplay=\"no\" loop=\"no\" width=\"400\" height=\"300\"target=\"" + newURL + "\"http://server.example.com/video1.mpeg\" /><a href=\"" + newURL + "\">Download Video1</a></object>" );
+				*/
 
 			};
 
@@ -369,9 +425,10 @@
 					console.log("displayRandom = true");
 					vm.CURRENT_SHOW.currentEpisodeLinks = [];
 					vm.CURRENT_SHOW.currentEpisodeLinks = vm.CURRENT_SHOW.randomlyGrabbedLinks;
-					vm.randomlyGrabbedLinks = [];
+
+
 					var newURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[0] );
-					if (newURL === undefined) {
+					if ( vm.CURRENT_SHOW.currentEpisodeLinks[0] === undefined) {
 						providerCounter += 1;
 						newURL = $sce.trustAsResourceUrl( vm.CURRENT_SHOW.currentEpisodeLinks[1] );
 					}
@@ -1022,6 +1079,8 @@
 			};
 
 			vm.reset = function() {
+
+				vm.IS_SHUFFLE = false;
 
 				storeForRandom = false;
 				storeForRandomFuture = false;
